@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default Deny-All Root Protection
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Owner-bound User Data Isolation
+    // Only the authenticated user matching the userId path segment can read or write their journal entries
+    match /users/{userId}/interactions/{interactionId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
