@@ -10,9 +10,11 @@ import { ConversationThread } from './components/ConversationThread';
 import { HistorySidebar } from './components/HistorySidebar';
 import { AnalyticsModal } from './components/AnalyticsModal';
 import { SecurityGuideModal } from './components/SecurityGuideModal';
+import { PersonalInsightsView } from './components/PersonalInsightsView';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => StorageService.getCurrentUser());
+  const [activeView, setActiveView] = useState<'journal' | 'insights'>('journal');
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [activeEntry, setActiveEntry] = useState<JournalEntry | null>(null);
   
@@ -275,9 +277,14 @@ export default function App() {
       {/* Top Navigation */}
       <Navbar
         user={currentUser}
+        activeView={activeView}
+        onViewChange={(view) => setActiveView(view)}
         onSignOut={handleSignOut}
         onOpenAuth={() => setIsAuthModalOpen(true)}
-        onNewEntry={handleCreateNewEntry}
+        onNewEntry={() => {
+          handleCreateNewEntry();
+          setActiveView('journal');
+        }}
         onOpenAnalytics={() => setIsAnalyticsOpen(true)}
         onOpenSecurity={() => setIsSecurityOpen(true)}
         streakCount={streakCount}
@@ -287,13 +294,27 @@ export default function App() {
       <main className="flex-1 flex flex-col">
         {!currentUser ? (
           <LandingHero onSignIn={() => setIsAuthModalOpen(true)} />
+        ) : activeView === 'insights' ? (
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 flex flex-col">
+            <PersonalInsightsView
+              entries={entries}
+              user={currentUser}
+              onNewEntry={() => {
+                handleCreateNewEntry();
+                setActiveView('journal');
+              }}
+            />
+          </div>
         ) : (
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 flex flex-col lg:flex-row gap-6">
             {/* History Sidebar */}
             <HistorySidebar
               entries={entries}
               selectedEntryId={activeEntry?.id || null}
-              onSelectEntry={(entry) => setActiveEntry(entry)}
+              onSelectEntry={(entry) => {
+                setActiveEntry(entry);
+                setActiveView('journal');
+              }}
               onNewEntry={handleCreateNewEntry}
               onDeleteEntry={handleDeleteEntry}
               userName={currentUser.displayName}

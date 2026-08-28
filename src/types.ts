@@ -43,9 +43,42 @@ export interface GenerateReflectionRequest {
   }>;
 }
 
-export interface GenerateReflectionResponse {
-  reply: string;
-  insights: string[];
-  actionItems: string[];
+export interface ThemeInsight {
+  theme: string;
+  explanation: string;
+}
+
+export interface ChallengeInsight {
+  challenge: string;
+  context: string;
+}
+
+export interface PositivePatternInsight {
+  pattern: string;
+  evidence: string;
+}
+
+export interface PersonalInsightsData {
+  generatedAt: string;
+  entryCountAnalyzed: number;
+  aiSummary: {
+    observations: string[];
+    synthesis: string;
+  };
+  recurringThemes: ThemeInsight[];
+  moodAnalysis: {
+    dominantMood: string;
+    trendDescription: string;
+    moodBreakdown: Record<string, number>;
+    timeline: Array<{
+      id: string;
+      date: string;
+      mood: string;
+      title: string;
+    }>;
+  };
+  commonChallenges: ChallengeInsight[];
+  positivePatterns: PositivePatternInsight[];
+  suggestedNextActions: string[];
   modelUsed: string;
 }

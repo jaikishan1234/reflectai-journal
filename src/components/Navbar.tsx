@@ -1,9 +1,11 @@
 import React from 'react';
 import { UserProfile } from '../types';
-import { Sparkles, LogOut, ShieldCheck, Flame, BookOpen, BarChart2, PlusCircle } from 'lucide-react';
+import { Sparkles, LogOut, ShieldCheck, Flame, BookOpen, BarChart2, PlusCircle, LineChart } from 'lucide-react';
 
 interface NavbarProps {
   user: UserProfile | null;
+  activeView: 'journal' | 'insights';
+  onViewChange: (view: 'journal' | 'insights') => void;
   onSignOut: () => void;
   onOpenAuth: () => void;
   onNewEntry: () => void;
@@ -14,6 +16,8 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   user,
+  activeView,
+  onViewChange,
   onSignOut,
   onOpenAuth,
   onNewEntry,
@@ -23,21 +27,57 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   return (
     <header className="w-full bg-stone-900/90 backdrop-blur-md border-b border-stone-800 sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        {/* Brand */}
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-400 flex items-center justify-center text-stone-950 shadow-md shadow-orange-500/20">
-            <Sparkles className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-stone-100 tracking-tight text-lg">ReflectAI</span>
-              <span className="text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded-full">
-                Gemini 3.6
-              </span>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+        {/* Brand & Mode Switcher */}
+        <div className="flex items-center gap-4 sm:gap-6">
+          <div 
+            onClick={() => onViewChange('journal')}
+            className="flex items-center gap-3 cursor-pointer select-none"
+          >
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-400 flex items-center justify-center text-stone-950 shadow-md shadow-orange-500/20">
+              <Sparkles className="w-5 h-5" />
             </div>
-            <p className="text-[11px] text-stone-400 hidden sm:block">Mindful Reflections & Secure Storage</p>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-stone-100 tracking-tight text-lg">ReflectAI</span>
+                <span className="text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded-full">
+                  Gemini 3.6
+                </span>
+              </div>
+              <p className="text-[11px] text-stone-400 hidden sm:block">Mindful Reflections & Secure Storage</p>
+            </div>
           </div>
+
+          {/* Primary View Switcher */}
+          {user && (
+            <nav className="flex items-center bg-stone-950/80 p-1 rounded-xl border border-stone-800">
+              <button
+                id="nav-tab-journal"
+                onClick={() => onViewChange('journal')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activeView === 'journal'
+                    ? 'bg-stone-800 text-amber-400 shadow-xs border border-stone-700'
+                    : 'text-stone-400 hover:text-stone-200'
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Journal</span>
+              </button>
+
+              <button
+                id="nav-tab-insights"
+                onClick={() => onViewChange('insights')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activeView === 'insights'
+                    ? 'bg-stone-800 text-amber-400 shadow-xs border border-stone-700'
+                    : 'text-stone-400 hover:text-stone-200'
+                }`}
+              >
+                <LineChart className="w-3.5 h-3.5" />
+                <span>Personal Insights</span>
+              </button>
+            </nav>
+          )}
         </div>
 
         {/* Action Controls */}
@@ -57,7 +97,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* New Entry Button */}
               <button
                 id="navbar-new-entry-btn"
-                onClick={onNewEntry}
+                onClick={() => {
+                  onNewEntry();
+                  onViewChange('journal');
+                }}
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-medium text-xs rounded-lg transition-all shadow-sm active:scale-95 cursor-pointer"
               >
                 <PlusCircle className="w-4 h-4" />
@@ -127,3 +170,4 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
+
