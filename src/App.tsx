@@ -11,10 +11,11 @@ import { HistorySidebar } from './components/HistorySidebar';
 import { AnalyticsModal } from './components/AnalyticsModal';
 import { SecurityGuideModal } from './components/SecurityGuideModal';
 import { PersonalInsightsView } from './components/PersonalInsightsView';
+import { AskJournalView } from './components/AskJournalView';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => StorageService.getCurrentUser());
-  const [activeView, setActiveView] = useState<'journal' | 'insights'>('journal');
+  const [activeView, setActiveView] = useState<'journal' | 'insights' | 'ask_journal'>('journal');
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [activeEntry, setActiveEntry] = useState<JournalEntry | null>(null);
   
@@ -297,6 +298,17 @@ export default function App() {
         ) : activeView === 'insights' ? (
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 flex flex-col">
             <PersonalInsightsView
+              entries={entries}
+              user={currentUser}
+              onNewEntry={() => {
+                handleCreateNewEntry();
+                setActiveView('journal');
+              }}
+            />
+          </div>
+        ) : activeView === 'ask_journal' ? (
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 flex flex-col">
+            <AskJournalView
               entries={entries}
               user={currentUser}
               onNewEntry={() => {

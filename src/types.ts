@@ -82,3 +82,29 @@ export interface PersonalInsightsData {
   suggestedNextActions: string[];
   modelUsed: string;
 }
+
+export interface JournalEvidence {
+  date: string;
+  entryTitle: string;
+  relevance: string;
+}
+
+export interface AskJournalResponse {
+  answer: string;
+  hasSufficientContext: boolean;
+  evidence: JournalEvidence[];
+  keyPatterns: string[];
+  suggestions: string[];
+  modelUsed?: string;
+  questionAsked?: string;
+  timestamp?: string;
+}
+
+export interface AskJournalHistoryItem {
+  id: string;
+  question: string;
+  response: AskJournalResponse;
+  timestamp: string;
+}
+
+

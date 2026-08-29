@@ -138,57 +138,139 @@ export const StorageService = {
     }
   },
 
-  // Initial Seed for new users
+  // Initial Seed for new users: provides 3 realistic, grounded entries covering learning, focus, and milestones
   async seedInitialData(userId: string, userName: string): Promise<JournalEntry[]> {
     const existing = await this.fetchFirestoreEntries(userId);
     if (existing.length > 0) return existing;
 
-    const sampleEntry: JournalEntry = {
-      id: 'welcome-reflection-1',
-      userId,
-      title: 'Welcome to ReflectAI ✨',
-      content: `Today I started using ReflectAI to build a regular journaling and mindful reflection habit. I want to balance my daily productivity with mental clarity, reduce burnout, and get actionable suggestions from Gemini.`,
-      mood: 'motivated',
-      tags: ['Growth', 'Mindfulness', 'First Entry'],
-      mode: 'reflect',
-      aiResponse: `### Welcome to your reflection space, ${userName}!
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+
+    const sampleEntries: JournalEntry[] = [
+      {
+        id: 'reflection-study-focus',
+        userId,
+        title: 'Deep Study Session & Focus Calibration 📚',
+        content: `Spent 3 hours this morning studying distributed systems and cloud database architectures. I used the Pomodoro technique (25 min focus, 5 min break) which drastically reduced digital distractions. Taking handwritten notes helped me retain complex consistency models much better than passively watching lectures. I noticed my energy dips around the 2-hour mark, so taking a short walking break was essential for staying sharp.`,
+        mood: 'motivated',
+        tags: ['Studying', 'Deep Work', 'Learning', 'Productivity'],
+        mode: 'action_plan',
+        aiResponse: `### Deep Work Analysis & Focus Strategy, ${userName}!
+
+Your structured approach to studying using time-boxing and active note-taking demonstrates excellent discipline.
+
+**Key Observations:**
+- Utilizing active retention techniques (handwritten notes) enhances comprehension of intricate topics.
+- Recognizing the 2-hour cognitive fatigue threshold allows for proactive scheduling of restorative breaks.
+
+**Suggested Next Steps:**
+1. Maintain the 25/5 Pomodoro rhythm for tomorrow's revision block.
+2. Schedule a 15-minute active recall review session before beginning new material.`,
+        aiKeyInsights: [
+          'Handwritten synthesis significantly improves conceptual retention.',
+          'Cognitive stamina peaks in early morning study windows.'
+        ],
+        aiActionItems: [
+          'Prepare active recall flashcards for distributed systems terms.',
+          'Keep phone in another room during the first 2-hour focus block.'
+        ],
+        messages: [
+          {
+            id: 'msg-study-1',
+            role: 'user',
+            content: 'How can I prevent the mid-study afternoon slump?',
+            timestamp: new Date(now - 2 * dayMs + 1800000).toISOString(),
+          },
+          {
+            id: 'msg-study-2',
+            role: 'assistant',
+            content: 'Hydrate before you feel thirsty, take a brisk 5-minute outdoor walk without screens, and switch from passive reading to active problem-solving exercises during lower-energy windows.',
+            timestamp: new Date(now - 2 * dayMs + 2100000).toISOString(),
+          }
+        ],
+        createdAt: new Date(now - 2 * dayMs).toISOString(),
+        updatedAt: new Date(now - 2 * dayMs).toISOString(),
+      },
+      {
+        id: 'reflection-distraction-routine',
+        userId,
+        title: 'Overcoming Study Distractions & Task Switching ⚡',
+        content: `Reflecting on my afternoon study habits: I caught myself repeatedly switching between coding exercises, checking email, and browsing documentation tabs. Multi-tasking made studying feel fragmented and increased my cognitive fatigue. Once I closed unnecessary browser tabs and put on ambient focus audio, I regained flow and finished my algorithm practice set. The main takeaway is that context switching is my biggest obstacle during self-directed study sessions.`,
+        mood: 'thoughtful',
+        tags: ['Studying', 'Focus', 'Habits', 'Mindfulness'],
+        mode: 'summarize',
+        aiResponse: `### Focus Calibration & Friction Reduction, ${userName}!
+
+Acknowledging when task-switching derails study momentum is the critical first step in building sustainable focus habits.
+
+**Key Observations:**
+- Multi-tab browsing and passive notifications create high context-switching friction.
+- Environmental controls (ambient focus sound, closed tabs) quickly restore cognitive flow.
+
+**Suggested Next Steps:**
+1. Implement a single-tab rule during deep practice sessions.
+2. Keep a distraction capture pad on your desk to write down unrelated thoughts without acting on them immediately.`,
+        aiKeyInsights: [
+          'Context switching is the primary driver of afternoon study fatigue.',
+          'Audio cues and minimalist browser workspaces help protect focus.'
+        ],
+        aiActionItems: [
+          'Use a single-tab workspace during algorithm practice.',
+          'Log distracting impulses on a notepad rather than opening new tabs.'
+        ],
+        messages: [],
+        createdAt: new Date(now - dayMs).toISOString(),
+        updatedAt: new Date(now - dayMs).toISOString(),
+      },
+      {
+        id: 'welcome-reflection-1',
+        userId,
+        title: 'Welcome to ReflectAI & Learning Milestones ✨',
+        content: `Today I started using ReflectAI to build a regular journaling and mindful reflection habit. I want to balance my daily productivity and intensive study routines with mental clarity, reduce burnout, and get actionable suggestions from Gemini. My main goal this month is to establish consistent daily study blocks and track how my focus evolves over time.`,
+        mood: 'motivated',
+        tags: ['Growth', 'Mindfulness', 'Studying', 'First Entry'],
+        mode: 'reflect',
+        aiResponse: `### Welcome to your reflection space, ${userName}!
 
 Writing down your intentions is an impactful first step. Your desire to balance productivity with mental wellbeing reflects strong self-awareness.
 
 **Key Observations:**
 - You recognize that sustainable productivity requires intentional mental clarity.
-- Setting up a structured reflection habit will help you process stress proactively.
+- Setting up a structured reflection habit will help you process study stress proactively.
 
 **Suggested Next Steps:**
 1. Pick a consistent 5-minute window each day (e.g. morning coffee or evening wind-down) for your reflections.
 2. Experiment with different AI modes like *Brainstorm* or *Action Plan* when facing complex decisions.`,
-      aiKeyInsights: [
-        'Recognized that high output requires deliberate cognitive recovery.',
-        'Committed to regular mindful reflection.'
-      ],
-      aiActionItems: [
-        'Set a daily 5-minute reminder for reflection.',
-        'Try the Brainstorm mode on an upcoming creative challenge.'
-      ],
-      messages: [
-        {
-          id: 'msg-1',
-          role: 'user',
-          content: 'How can I stay consistent with journaling without feeling overwhelmed?',
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-        },
-        {
-          id: 'msg-2',
-          role: 'assistant',
-          content: 'Keep the barrier to entry extremely low! Even 2-3 bullet points about what went well and what you felt today is enough. Consistency beats length every single time.',
-          timestamp: new Date(Date.now() - 3500000).toISOString(),
-        }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+        aiKeyInsights: [
+          'Recognized that high output requires deliberate cognitive recovery.',
+          'Committed to regular mindful reflection.'
+        ],
+        aiActionItems: [
+          'Set a daily 5-minute reminder for reflection.',
+          'Try the Brainstorm mode on an upcoming creative challenge.'
+        ],
+        messages: [
+          {
+            id: 'msg-1',
+            role: 'user',
+            content: 'How can I stay consistent with journaling without feeling overwhelmed?',
+            timestamp: new Date(now - 3600000).toISOString(),
+          },
+          {
+            id: 'msg-2',
+            role: 'assistant',
+            content: 'Keep the barrier to entry extremely low! Even 2-3 bullet points about what went well and what you felt today is enough. Consistency beats length every single time.',
+            timestamp: new Date(now - 3500000).toISOString(),
+          }
+        ],
+        createdAt: new Date(now).toISOString(),
+        updatedAt: new Date(now).toISOString(),
+      }
+    ];
 
-    await this.saveEntry(userId, sampleEntry);
-    return [sampleEntry];
+    for (const entry of sampleEntries) {
+      await this.saveEntry(userId, entry);
+    }
+    return sampleEntries;
   }
 };
