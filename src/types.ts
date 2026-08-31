@@ -107,4 +107,27 @@ export interface AskJournalHistoryItem {
   timestamp: string;
 }
 
+export interface StoryEvidence {
+  entryId: string;
+  entryTitle: string;
+  date: string;
+  excerpt: string;
+}
+
+export interface StoryChangeItem {
+  title: string;
+  description: string;
+  earlierEvidence: StoryEvidence[];
+  recentEvidence: StoryEvidence[];
+}
+
+export interface YourStoryResponse {
+  summary: string;
+  changes: StoryChangeItem[];
+  hasSufficientContext: boolean;
+  analyzedEntryCount: number;
+  timestamp: string;
+  modelUsed: string;
+}
+
 

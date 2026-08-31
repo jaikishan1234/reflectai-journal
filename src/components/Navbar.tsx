@@ -1,11 +1,11 @@
 import React from 'react';
 import { UserProfile } from '../types';
-import { Sparkles, LogOut, ShieldCheck, Flame, BookOpen, BarChart2, PlusCircle, LineChart, HelpCircle } from 'lucide-react';
+import { Sparkles, LogOut, ShieldCheck, Flame, BookOpen, BarChart2, PlusCircle, LineChart, HelpCircle, Compass } from 'lucide-react';
 
 interface NavbarProps {
   user: UserProfile | null;
-  activeView: 'journal' | 'insights' | 'ask_journal';
-  onViewChange: (view: 'journal' | 'insights' | 'ask_journal') => void;
+  activeView: 'journal' | 'insights' | 'ask_journal' | 'story';
+  onViewChange: (view: 'journal' | 'insights' | 'ask_journal' | 'story') => void;
   onSignOut: () => void;
   onOpenAuth: () => void;
   onNewEntry: () => void;
@@ -88,6 +88,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <HelpCircle className="w-3.5 h-3.5" />
                 <span>Ask My Journal</span>
+              </button>
+
+              <button
+                id="nav-tab-your-story"
+                onClick={() => onViewChange('story')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activeView === 'story'
+                    ? 'bg-stone-800 text-amber-400 shadow-xs border border-stone-700'
+                    : 'text-stone-400 hover:text-stone-200'
+                }`}
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>Your Story</span>
               </button>
             </nav>
           )}
