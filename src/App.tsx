@@ -174,6 +174,7 @@ export default function App() {
         mode: mode,
         mood: entry.mood,
         tags: entry.tags,
+        youtubeAttachment: entry.youtubeAttachment || null,
       };
 
       const response = await fetch('/api/gemini/reflect', {

@@ -102,7 +102,8 @@ function generateSmartLocalReflection(
   entryTitle: string,
   mood: string,
   mode: string,
-  tags: string[] = []
+  tags: string[] = [],
+  youtubeAttachment?: any
 ): { reply: string; insights: string[]; actionItems: string[] } {
   const cleanPrompt = prompt.trim();
   const titleText = entryTitle || 'Your Reflection';
@@ -137,6 +138,10 @@ function generateSmartLocalReflection(
   const words = cleanPrompt.split(/\s+/).filter(w => w.length > 4);
   const sampleTopics = tags.length > 0 ? tags.join(', ') : (words.slice(0, 3).join(', ') || 'daily priorities');
 
+  const videoContextNote = youtubeAttachment && youtubeAttachment.title
+    ? `\n\n*Attached Video Context*: Attached to reflection on **"${youtubeAttachment.title}"** (${youtubeAttachment.channelTitle || 'YouTube'}).`
+    : '';
+
   switch (mode) {
     case 'summarize':
       reply = `### Reflection Summary: ${titleText}
@@ -146,11 +151,14 @@ ${moodEmpathy}
 #### Key Takeaways
 - **Core Focus**: You explored meaningful thoughts around ${sampleTopics}.
 - **Emotional Tone**: Grounded in a "${mood}" mindset with strong self-awareness.
-- **Intent**: Articulated a desire for clarity, alignment, and productive progress.
+- **Intent**: Articulated a desire for clarity, alignment, and productive progress.${videoContextNote}
 
 *Mindful Observation*: Writing down these thoughts clarifies your cognitive load, transforming abstract ideas into actionable paths.`;
       insights.push(`Strong focus identified around ${sampleTopics}.`);
       insights.push(`Self-awareness logged with a predominant "${mood}" state.`);
+      if (youtubeAttachment && youtubeAttachment.title) {
+        insights.push(`Reflected on concepts connected to "${youtubeAttachment.title}".`);
+      }
       actionItems.push('Review these key points at the start of your next work session.');
       actionItems.push('Highlight 1 primary priority to complete first.');
       break;
@@ -163,7 +171,7 @@ ${moodEmpathy}
 #### 3-Step Momentum Plan
 1. **Immediate Quick Win (Next 2 Hours)**: Complete one small, discrete task related to ${sampleTopics} to generate positive momentum.
 2. **Structural Milestone (Tomorrow)**: Allocate an uninterrupted 30-minute block to organize your main objective without multitasking.
-3. **Weekly Check-in**: Re-read this entry on Friday to acknowledge your progress and calibrate your approach.
+3. **Weekly Check-in**: Re-read this entry on Friday to acknowledge your progress and calibrate your approach.${videoContextNote}
 
 *Key Principle*: Focus on consistency rather than perfection. Small actions compounded daily create remarkable results.`;
       insights.push('Breaking goals into immediate steps reduces cognitive friction.');
@@ -180,7 +188,7 @@ ${moodEmpathy}
 #### Emotional Grounding & Affirmation
 - **Validation**: Give yourself credit for taking the time to pause and reflect today.
 - **Mindful Pause**: Take three slow, conscious breaths. Inhale for 4 seconds, hold for 4, and exhale gently for 6.
-- **Self-Compassion**: Remember that progress is not linear; listening to your emotional needs is a vital strength.
+- **Self-Compassion**: Remember that progress is not linear; listening to your emotional needs is a vital strength.${videoContextNote}
 
 *Gentle Inquiry*: What is one restorative activity (a walk, a warm drink, or quiet time) you can gift yourself today?`;
       insights.push('Emotional awareness serves as an early indicator of your wellbeing.');
@@ -197,7 +205,7 @@ ${moodEmpathy}
 #### Alternative Perspectives to Explore
 - **The 80/20 Lens**: Which 20% of your current efforts around ${sampleTopics} will yield 80% of your peace of mind or results?
 - **Inversion Thinking**: What obstacles might arise, and what proactive guardrails can you set up today?
-- **Simplification**: If you could only accomplish one thing from this entry, what would make everything else easier?
+- **Simplification**: If you could only accomplish one thing from this entry, what would make everything else easier?${videoContextNote}
 
 *Creative Spark*: Look at this challenge as an opportunity to design a lighter, more enjoyable routine.`;
       insights.push('Reframing challenges as experiments opens up creative solutions.');
@@ -215,12 +223,15 @@ ${moodEmpathy}
 #### Mindful Observations
 Reading through your thoughts on **${titleText}**, your engagement with ${sampleTopics} highlights a clear drive to find balance and meaningful direction. 
 
-When navigating moments recorded in a **${mood}** state, acknowledging both the friction and the possibilities allows you to respond with clarity rather than reacting to circumstances.
+When navigating moments recorded in a **${mood}** state, acknowledging both the friction and the possibilities allows you to respond with clarity rather than reacting to circumstances.${videoContextNote}
 
 #### Introspective Question
 *Looking at what you wrote today, what is the single most meaningful truth you want to carry forward into tomorrow?*`;
       insights.push(`Thoughtful reflection logged regarding ${sampleTopics}.`);
       insights.push(`Your "${mood}" emotional state provides context for your current priorities.`);
+      if (youtubeAttachment && youtubeAttachment.title) {
+        insights.push(`Connected personal reflection to "${youtubeAttachment.title}".`);
+      }
       actionItems.push('Reflect briefly on your answer to the introspective question.');
       actionItems.push('Carry one positive insight forward into your daily routine.');
       break;
@@ -305,7 +316,7 @@ function extractRelevantJournalEntries(rawQuestion: string, entries: any[]): {
     'japan', 'vacation', 'trip', 'travel', 'study', 'studying', 'algorithm', 'code', 'coding', 'exam',
     'project', 'meeting', 'sleep', 'workout', 'gym', 'book', 'reading', 'movie', 'friend', 'friends',
     'colleague', 'manager', 'money', 'budget', 'routine', 'habit', 'habits', 'distraction', 'phone',
-    'notification'
+    'notification', 'youtube', 'video', 'watch', 'watching', 'channel', 'lecture', 'tutorial', 'clip'
   ];
 
   const containsSpecificTopic = specificTopicIndicators.some(topic => {
@@ -322,10 +333,13 @@ function extractRelevantJournalEntries(rawQuestion: string, entries: any[]): {
     const title = (e.title || '').toLowerCase();
     const content = (e.content || '').toLowerCase();
     const tags = (Array.isArray(e.tags) ? e.tags : []).join(' ').toLowerCase();
+    const ytTitle = (e.youtubeAttachment?.title || '').toLowerCase();
+    const ytChannel = (e.youtubeAttachment?.channelTitle || '').toLowerCase();
 
     const titleWords = title.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
     const tagWords = tags.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
     const contentWords = content.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
+    const ytWords = `${ytTitle} ${ytChannel}`.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
 
     if (isBroadOverview) {
       // For broad queries, all available entries receive baseline relevance
@@ -342,6 +356,13 @@ function extractRelevantJournalEntries(rawQuestion: string, entries: any[]): {
         if (contentWords.includes(token) || content.includes(token)) {
           score += 6;
         }
+        if (ytWords.includes(token) || ytTitle.includes(token) || ytChannel.includes(token)) {
+          score += 15;
+        }
+      }
+      // If query is specifically about youtube/video and entry has youtube attachment
+      if ((substantiveTokens.includes('youtub') || substantiveTokens.includes('video') || substantiveTokens.includes('watch') || qLower.includes('youtube') || qLower.includes('video')) && e.youtubeAttachment) {
+        score += 20;
       }
     }
 
@@ -363,7 +384,11 @@ function extractRelevantJournalEntries(rawQuestion: string, entries: any[]): {
 // Generates an authentic grounded relevance snippet directly from the entry's actual text
 function generateEntryRelevanceSnippet(entry: any, keywords?: string[]): string {
   const content = (entry.content || '').replace(/\s+/g, ' ').trim();
-  if (!content) return `Recorded in entry "${entry.title || 'Untitled Reflection'}".`;
+  const videoMention = (entry.youtubeAttachment && entry.youtubeAttachment.title)
+    ? ` [Attached Video: "${entry.youtubeAttachment.title}"]`
+    : '';
+
+  if (!content) return `Recorded in reflection "${entry.title || 'Untitled Reflection'}".${videoMention}`;
 
   const sentences = content.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
 
@@ -372,7 +397,7 @@ function generateEntryRelevanceSnippet(entry: any, keywords?: string[]): string 
     for (const s of sentences) {
       const sLower = s.toLowerCase();
       if (keywords.some(k => sLower.includes(k))) {
-        return s.length > 160 ? s.slice(0, 157) + '...' : s;
+        return (s.length > 160 ? s.slice(0, 157) + '...' : s) + videoMention;
       }
     }
   }
@@ -380,10 +405,10 @@ function generateEntryRelevanceSnippet(entry: any, keywords?: string[]): string 
   // Otherwise return the first authentic sentence or excerpt
   if (sentences.length > 0) {
     const first = sentences[0];
-    return first.length > 160 ? first.slice(0, 157) + '...' : first;
+    return (first.length > 160 ? first.slice(0, 157) + '...' : first) + videoMention;
   }
 
-  return content.length > 140 ? content.slice(0, 137) + '...' : content;
+  return (content.length > 140 ? content.slice(0, 137) + '...' : content) + videoMention;
 }
 
 // Local Grounded Question Answering Engine over User Journal Entries
@@ -466,6 +491,84 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// API: YouTube Metadata Resolver (Strict oEmbed proxy & Zero-Scraping)
+app.post('/api/youtube/metadata', async (req, res) => {
+  try {
+    const data = (req.body && typeof req.body === 'object') ? req.body : {};
+    const rawUrl = typeof data.url === 'string' ? data.url.trim() : '';
+
+    if (!rawUrl) {
+      return res.status(400).json({ error: 'Please provide a valid YouTube URL.' });
+    }
+
+    // Strict URL Validation for YouTube formats
+    const ytRegex = /(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?.*v=|shorts\/|embed\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = rawUrl.match(ytRegex);
+
+    if (!match || !match[1]) {
+      return res.status(400).json({
+        error: 'Invalid YouTube link format. Please provide a standard YouTube video, shorts, or youtu.be link.'
+      });
+    }
+
+    const videoId = match[1];
+    const canonicalUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const standardThumbnail = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+
+    let title = `YouTube Reflection (${videoId})`;
+    let channelTitle = 'YouTube';
+    let authorUrl = '';
+    let thumbnailUrl = standardThumbnail;
+
+    try {
+      // Fetch public oEmbed metadata (official YouTube public API, no key required, zero scraping)
+      const oEmbedEndpoint = `https://www.youtube.com/oembed?url=${encodeURIComponent(canonicalUrl)}&format=json`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      const oembedRes = await fetch(oEmbedEndpoint, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'ReflectAI-Journal/1.0',
+        },
+      });
+      clearTimeout(timeoutId);
+
+      if (oembedRes.ok) {
+        const oembedData: any = await oembedRes.json();
+        if (oembedData && typeof oembedData === 'object') {
+          if (typeof oembedData.title === 'string' && oembedData.title.trim()) {
+            title = oembedData.title.trim();
+          }
+          if (typeof oembedData.author_name === 'string' && oembedData.author_name.trim()) {
+            channelTitle = oembedData.author_name.trim();
+          }
+          if (typeof oembedData.author_url === 'string') {
+            authorUrl = oembedData.author_url;
+          }
+          if (typeof oembedData.thumbnail_url === 'string') {
+            thumbnailUrl = oembedData.thumbnail_url;
+          }
+        }
+      }
+    } catch (fetchErr) {
+      console.warn('[YouTube oEmbed] Fallback to standard metadata for videoId:', videoId, fetchErr);
+    }
+
+    return res.json({
+      videoId,
+      url: canonicalUrl,
+      title,
+      channelTitle,
+      authorUrl,
+      thumbnailUrl,
+    });
+  } catch (err: any) {
+    console.error('Error in /api/youtube/metadata:', err);
+    return res.status(500).json({ error: 'Failed to process YouTube video context.' });
+  }
+});
+
 // API: Generate Reflection or Multi-turn Chat Reply
 app.post('/api/gemini/reflect', async (req, res) => {
   try {
@@ -476,6 +579,7 @@ app.post('/api/gemini/reflect', async (req, res) => {
     const mode = typeof data.mode === 'string' ? data.mode : 'reflect';
     const mood = typeof data.mood === 'string' ? data.mood : 'thoughtful';
     const history = Array.isArray(data.history) ? data.history : [];
+    const youtubeAttachment = (data.youtubeAttachment && typeof data.youtubeAttachment === 'object') ? data.youtubeAttachment : null;
 
     if (!prompt && history.length === 0) {
       return res.status(400).json({
@@ -503,13 +607,19 @@ app.post('/api/gemini/reflect', async (req, res) => {
         break;
     }
 
+    const videoContextString = youtubeAttachment && youtubeAttachment.title
+      ? `\n- Attached YouTube Video Context:\n  * Title: "${youtubeAttachment.title}"\n  * Channel: "${youtubeAttachment.channelTitle || 'YouTube'}"\n  * URL: ${youtubeAttachment.url}`
+      : '';
+
     const systemInstruction = `You are ReflectAI, an intelligent, empathetic, and confidential reflection and journaling companion.
 Current Journal Context:
 - Entry Title: "${entryTitle}"
 - User Mood: ${mood}
-- Objective: ${modeInstruction}
+- Objective: ${modeInstruction}${videoContextString}
 
-Guidelines:
+Strict Reflection Directives:
+- The user's journal reflection is the PRIMARY source of truth. Ground insights primarily in the user's authentic thoughts, feelings, and takeaways.
+- Connect the reflection gracefully to the context of the attached video without pretending to know unstated full video details unless mentioned by the user.
 - Maintain a warm, supportive, and non-judgmental tone.
 - Use clear Markdown formatting with headers, bullet points, and bold text.
 - Be concise yet insightful.
@@ -549,7 +659,8 @@ Guidelines:
         entryTitle,
         mood,
         mode,
-        Array.isArray(data.tags) ? data.tags : []
+        Array.isArray(data.tags) ? data.tags : [],
+        youtubeAttachment
       );
       return res.json({
         reply: localResult.reply,
@@ -596,7 +707,8 @@ Guidelines:
       typeof req.body?.entryTitle === 'string' ? req.body.entryTitle : 'Journal Reflection',
       typeof req.body?.mood === 'string' ? req.body.mood : 'thoughtful',
       typeof req.body?.mode === 'string' ? req.body.mode : 'reflect',
-      Array.isArray(req.body?.tags) ? req.body.tags : []
+      Array.isArray(req.body?.tags) ? req.body.tags : [],
+      (req.body?.youtubeAttachment && typeof req.body?.youtubeAttachment === 'object') ? req.body.youtubeAttachment : null
     );
     return res.json({
       reply: localResult.reply,
@@ -910,6 +1022,11 @@ app.post('/api/gemini/ask-journal', async (req, res) => {
       mood: e.mood || 'thoughtful',
       tags: Array.isArray(e.tags) ? e.tags.slice(0, 6) : [],
       content: (e.content || '').slice(0, 600).replace(/\s+/g, ' ').trim(),
+      attachedVideo: e.youtubeAttachment ? {
+        title: e.youtubeAttachment.title,
+        channel: e.youtubeAttachment.channelTitle || 'YouTube',
+        timestampNote: e.youtubeAttachment.timestampNote || '',
+      } : undefined,
     }));
 
     // Server-side logging: entries sent to Gemini

@@ -80,6 +80,7 @@ export const AskJournalView: React.FC<AskJournalViewProps> = ({
             mood: e.mood,
             tags: e.tags,
             createdAt: e.createdAt,
+            youtubeAttachment: e.youtubeAttachment || null,
           })),
         }),
       });

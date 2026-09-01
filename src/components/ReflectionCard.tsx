@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Markdown from 'react-markdown';
-import { Sparkles, CheckSquare, Square, Lightbulb, Copy, Check, ShieldCheck, CornerDownRight } from 'lucide-react';
+import { Sparkles, CheckSquare, Square, Lightbulb, Copy, Check, ShieldCheck, CornerDownRight, Video, ExternalLink } from 'lucide-react';
 import { JournalEntry } from '../types';
 
 interface ReflectionCardProps {
@@ -77,6 +77,49 @@ export const ReflectionCard: React.FC<ReflectionCardProps> = ({ entry, onAskFoll
           )}
         </button>
       </div>
+
+      {/* Attached YouTube Context Preview if present */}
+      {entry.youtubeAttachment && (
+        <div className="mb-5 p-3 bg-stone-950/70 border border-red-500/20 rounded-xl flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            {entry.youtubeAttachment.thumbnailUrl ? (
+              <img
+                src={entry.youtubeAttachment.thumbnailUrl}
+                alt={entry.youtubeAttachment.title}
+                referrerPolicy="no-referrer"
+                className="w-14 h-10 rounded-lg object-cover bg-stone-900 border border-stone-800 shrink-0"
+              />
+            ) : (
+              <div className="w-14 h-10 rounded-lg bg-red-950/40 border border-red-800/40 flex items-center justify-center shrink-0">
+                <Video className="w-5 h-5 text-red-400" />
+              </div>
+            )}
+            <div className="min-w-0">
+              <div className="text-[10px] font-semibold text-red-400 flex items-center gap-1 uppercase tracking-wider">
+                <Video className="w-3 h-3" />
+                <span>Connected YouTube Context</span>
+              </div>
+              <h4 className="text-xs font-semibold text-stone-200 truncate mt-0.5" title={entry.youtubeAttachment.title}>
+                {entry.youtubeAttachment.title}
+              </h4>
+              <div className="text-[11px] text-stone-400 truncate">
+                {entry.youtubeAttachment.channelTitle || 'YouTube'}
+                {entry.youtubeAttachment.timestampNote && ` • Note: ${entry.youtubeAttachment.timestampNote}`}
+              </div>
+            </div>
+          </div>
+
+          <a
+            href={entry.youtubeAttachment.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 px-2.5 py-1 text-[11px] text-stone-400 hover:text-stone-200 bg-stone-900 hover:bg-stone-850 border border-stone-800 rounded-md transition-colors shrink-0"
+          >
+            <ExternalLink className="w-3 h-3" />
+            <span>Open</span>
+          </a>
+        </div>
+      )}
 
       {/* Key Insights Chips if available */}
       {entry.aiKeyInsights && entry.aiKeyInsights.length > 0 && (

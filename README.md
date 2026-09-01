@@ -136,3 +136,14 @@ Every interaction in the application can be verified using the following test sc
 2. Confirm the streak counter, word tally, and mood breakdown reflect active journal metrics.
 3. In the sidebar footer, click **Markdown** or **JSON** to download the complete archive.
 4. **Expected Result**: Formatted file downloads to client machine without data truncation.
+
+### Test Case 6: YouTube Reflection & Video Context Grounding
+1. In the journal editor, click **+ Add Context** in the top right.
+2. Select **YouTube Video**.
+3. Paste a YouTube URL (e.g. `https://www.youtube.com/watch?v=dQw4w9WgXcQ` or `https://youtu.be/...`).
+4. Click **Attach Video**.
+5. **Expected Result**: Video metadata (title, channel, thumbnail) is securely resolved via the lightweight oEmbed proxy without scraping or downloading video content.
+6. Write a personal reflection relating to the video and click **Generate Gemini Reflection & Save to Firestore**.
+7. **Expected Result**: Gemini incorporates the video title and channel context alongside the user's reflection; the saved entry displays the connected video badge in the history sidebar and reflection card.
+8. Navigate to **Ask My Journal** and query about the topic of the attached video (e.g., "What videos or lectures did I reflect on?").
+9. **Expected Result**: Gemini answers the question citing the journal entry with the attached video context.

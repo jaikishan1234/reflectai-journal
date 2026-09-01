@@ -17,6 +17,17 @@ export interface ChatMessage {
   timestamp: string;
 }
 
+export interface YouTubeAttachment {
+  videoId: string;
+  url: string;
+  title: string;
+  channelTitle?: string;
+  thumbnailUrl?: string;
+  authorUrl?: string;
+  timestampNote?: string;
+  attachedAt?: string;
+}
+
 export interface JournalEntry {
   id: string;
   userId: string;
@@ -31,6 +42,7 @@ export interface JournalEntry {
   messages: ChatMessage[];
   photos?: string[];
   location?: string;
+  youtubeAttachment?: YouTubeAttachment | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,6 +53,7 @@ export interface GenerateReflectionRequest {
   mode: ReflectionMode;
   mood?: string;
   tags?: string[];
+  youtubeAttachment?: YouTubeAttachment | null;
   history?: Array<{
     role: 'user' | 'assistant';
     content: string;
