@@ -2090,6 +2090,433 @@ Generate a structured JSON response matching this EXACT schema:
 });
 
 
+// Smart Local Wrapped Retrospective Engine
+function generateSmartLocalWrapped(
+  sortedEntries: any[]
+): {
+  stats: any;
+  themes: any[];
+  emotionalJourney: any;
+  biggestShift: any;
+  moments: any[];
+  photos: any[];
+  places: any[];
+  finalReflection: any;
+  generatedAt: string;
+  modelUsed: string;
+  hasSufficientContext: boolean;
+} {
+  const totalCount = sortedEntries.length;
+  if (totalCount === 0) {
+    return {
+      stats: {
+        periodTitle: 'Your ReflectAI Story Is Just Beginning',
+        dateRangeFormatted: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        totalEntries: 0,
+        activeDaysCount: 0,
+        currentStreak: 0,
+        longestStreak: 0,
+        totalWordsLogged: 0,
+        isInitialJourney: true,
+      },
+      themes: [],
+      emotionalJourney: {
+        dominantMood: 'thoughtful',
+        earlierMood: 'thoughtful',
+        recentMood: 'thoughtful',
+        progressionDescription: 'Log your first reflections to begin tracking your emotional journey.',
+        moodCounts: {},
+        totalLoggedMoods: 0,
+      },
+      biggestShift: {
+        headline: 'A Blank Canvas of Growth',
+        explanation: 'As you log more reflections, your personal shifts and breakthrough moments will unfold here.',
+        earlierExcerpt: { title: 'First Steps', date: 'Day 1', text: 'Starting your reflective practice.' },
+        recentExcerpt: { title: 'Today', date: 'Present', text: 'A mindful space for your thoughts.' },
+      },
+      moments: [],
+      photos: [],
+      places: [],
+      finalReflection: {
+        headline: 'Every journey begins with a single reflection.',
+        narrative: 'Welcome to your private reflective sanctuary. Capture your daily thoughts, milestones, and challenges to build your personal retrospective.',
+        celebrationQuote: 'Your voice matters. Write often, reflect deeply, and celebrate small wins.',
+      },
+      generatedAt: new Date().toISOString(),
+      modelUsed: 'resilient-offline-engine',
+      hasSufficientContext: false,
+    };
+  }
+
+  // Deterministic date and streak calculations
+  const uniqueDates = Array.from(
+    new Set(sortedEntries.map(e => (e.createdAt ? new Date(e.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0])))
+  ).sort();
+
+  let maxStreak = 1;
+  let currStreak = 1;
+  for (let i = 1; i < uniqueDates.length; i++) {
+    const prev = new Date(uniqueDates[i - 1]).getTime();
+    const curr = new Date(uniqueDates[i]).getTime();
+    const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
+    if (diffDays === 1) {
+      currStreak++;
+      if (currStreak > maxStreak) maxStreak = currStreak;
+    } else {
+      currStreak = 1;
+    }
+  }
+
+  const earliestDate = sortedEntries[0]?.createdAt ? new Date(sortedEntries[0].createdAt) : new Date();
+  const latestDate = sortedEntries[sortedEntries.length - 1]?.createdAt ? new Date(sortedEntries[sortedEntries.length - 1].createdAt) : new Date();
+  const totalDaysSpan = Math.max(1, Math.round((latestDate.getTime() - earliestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+
+  let periodTitle = 'Your 2026 in Reflection';
+  if (totalDaysSpan <= 14) {
+    periodTitle = `Your First ${totalDaysSpan === 1 ? 'Day' : `${totalDaysSpan} Days`} in Reflection`;
+  } else if (totalDaysSpan <= 60) {
+    periodTitle = 'Your ReflectAI Journey So Far';
+  }
+
+  const dateRangeFormatted = `${earliestDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} – ${latestDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+
+  const totalWordsLogged = sortedEntries.reduce((sum, e) => {
+    const words = (e.content || '').trim().split(/\s+/).filter(Boolean).length;
+    return sum + words;
+  }, 0);
+
+  // Mood Journey
+  const moodCounts: Record<string, number> = {};
+  for (const e of sortedEntries) {
+    if (e.mood) {
+      moodCounts[e.mood] = (moodCounts[e.mood] || 0) + 1;
+    }
+  }
+  const dominantMood = Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'thoughtful';
+  const earlierMood = sortedEntries[0]?.mood || 'thoughtful';
+  const recentMood = sortedEntries[sortedEntries.length - 1]?.mood || 'thoughtful';
+
+  let progressionDescription = `You maintained a steady, self-aware stance, with ${dominantMood} being your most frequent state of mind.`;
+  if (earlierMood !== recentMood) {
+    progressionDescription = `Your emotional tone transitioned from feeling primarily ${earlierMood} in your earlier entries toward feeling ${recentMood} as you maintained your reflective cadence.`;
+  }
+
+  // Grounded Themes Extraction
+  const tagCounts: Record<string, number> = {};
+  for (const e of sortedEntries) {
+    if (Array.isArray(e.tags)) {
+      for (const t of e.tags) {
+        const cleanTag = t.replace(/^#/, '').trim();
+        if (cleanTag) {
+          tagCounts[cleanTag] = (tagCounts[cleanTag] || 0) + 1;
+        }
+      }
+    }
+  }
+
+  const themes: any[] = [];
+  const topTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  if (topTags.length > 0) {
+    for (const [tag, count] of topTags) {
+      themes.push({
+        name: tag,
+        count,
+        description: `Featured across ${count} ${count === 1 ? 'reflection' : 'reflections'} exploring focus and personal growth.`,
+      });
+    }
+  } else {
+    themes.push(
+      { name: 'Mindful Focus', count: totalCount, description: 'Dedicated journaling sessions to process priorities and maintain momentum.' },
+      { name: 'Self-Observation', count: totalCount, description: 'Noticing daily energy shifts and refining your workflow.' }
+    );
+  }
+
+  // Moments That Mattered (Pick up to 3 distinct entries)
+  const moments: any[] = [];
+  if (sortedEntries.length > 0) {
+    const firstEntry = sortedEntries[0];
+    moments.push({
+      id: firstEntry.id,
+      title: firstEntry.title || 'Beginning the Habit',
+      date: firstEntry.createdAt ? new Date(firstEntry.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Day 1',
+      mood: firstEntry.mood || 'motivated',
+      tags: firstEntry.tags || [],
+      excerpt: (firstEntry.content || '').slice(0, 140).trim() + '...',
+    });
+
+    if (sortedEntries.length >= 3) {
+      const midEntry = sortedEntries[Math.floor(sortedEntries.length / 2)];
+      if (midEntry.id !== firstEntry.id) {
+        moments.push({
+          id: midEntry.id,
+          title: midEntry.title || 'Deepening Reflections',
+          date: midEntry.createdAt ? new Date(midEntry.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Milestone',
+          mood: midEntry.mood || 'thoughtful',
+          tags: midEntry.tags || [],
+          excerpt: (midEntry.content || '').slice(0, 140).trim() + '...',
+        });
+      }
+    }
+
+    const latestEntry = sortedEntries[sortedEntries.length - 1];
+    if (latestEntry.id !== firstEntry.id && (!moments[1] || latestEntry.id !== moments[1].id)) {
+      moments.push({
+        id: latestEntry.id,
+        title: latestEntry.title || 'Recent Milestone',
+        date: latestEntry.createdAt ? new Date(latestEntry.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent',
+        mood: latestEntry.mood || 'peaceful',
+        tags: latestEntry.tags || [],
+        excerpt: (latestEntry.content || '').slice(0, 140).trim() + '...',
+      });
+    }
+  }
+
+  // Extract photos if any exist in entry.photos or markdown
+  const photos: any[] = [];
+  for (const e of sortedEntries) {
+    if (Array.isArray(e.photos)) {
+      for (const p of e.photos) {
+        if (typeof p === 'string' && p.startsWith('http')) {
+          photos.push({
+            entryId: e.id,
+            entryTitle: e.title || 'Reflection Memory',
+            date: e.createdAt ? new Date(e.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Memory',
+            photoUrl: p,
+          });
+        }
+      }
+    }
+    // Check markdown images
+    const mdImgMatch = (e.content || '').match(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/);
+    if (mdImgMatch && mdImgMatch[2]) {
+      photos.push({
+        entryId: e.id,
+        entryTitle: e.title || 'Reflection Memory',
+        date: e.createdAt ? new Date(e.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Memory',
+        photoUrl: mdImgMatch[2],
+        caption: mdImgMatch[1] || 'Attached journal image',
+      });
+    }
+  }
+
+  // Extract places if any exist in entry.location or tags
+  const places: any[] = [];
+  for (const e of sortedEntries) {
+    if (e.location && typeof e.location === 'string' && e.location.trim().length > 0) {
+      places.push({
+        name: e.location.trim(),
+        entryTitle: e.title || 'Reflection',
+        date: e.createdAt ? new Date(e.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recent',
+        mentionCount: 1,
+      });
+    }
+  }
+
+  // Biggest Shift
+  const midPoint = Math.floor(sortedEntries.length / 2);
+  const earlierSample = sortedEntries[0];
+  const recentSample = sortedEntries[sortedEntries.length - 1];
+  const biggestShift = {
+    headline: totalCount > 1 ? 'Evolving from Exploration to Consistency' : 'Establishing Your Reflective Rhythm',
+    explanation: totalCount > 1
+      ? `Looking across your timeline, you built greater intentionality around your study and work boundaries, translating spontaneous reflections into a structured habit.`
+      : 'You initiated a dedicated mindful practice to process your thoughts and prioritize what matters most.',
+    earlierExcerpt: {
+      title: earlierSample.title || 'Earlier Reflection',
+      date: earlierSample.createdAt ? new Date(earlierSample.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Earlier',
+      text: (earlierSample.content || '').slice(0, 150).trim(),
+    },
+    recentExcerpt: {
+      title: recentSample.title || 'Recent Reflection',
+      date: recentSample.createdAt ? new Date(recentSample.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recent',
+      text: (recentSample.content || '').slice(0, 150).trim(),
+    },
+  };
+
+  // Final Reflection
+  const finalReflection = {
+    headline: 'Your Reflections Are Building Clarity',
+    narrative: `Across ${totalCount} recorded ${totalCount === 1 ? 'reflection' : 'reflections'} and ${totalWordsLogged} words, you created a space to pause, calibrate, and recognize your personal rhythm. Your biggest milestone wasn't just completing tasks—it was maintaining self-awareness along the way.`,
+    celebrationQuote: 'Keep honoring your cadence. Consistency in reflection transforms everyday moments into lifelong wisdom.',
+  };
+
+  return {
+    stats: {
+      periodTitle,
+      dateRangeFormatted,
+      totalEntries: totalCount,
+      activeDaysCount: uniqueDates.length,
+      currentStreak: currStreak,
+      longestStreak: maxStreak,
+      totalWordsLogged,
+      isInitialJourney: totalCount < 3,
+    },
+    themes,
+    emotionalJourney: {
+      dominantMood,
+      earlierMood,
+      recentMood,
+      progressionDescription,
+      moodCounts,
+      totalLoggedMoods: Object.values(moodCounts).reduce((a, b) => a + b, 0),
+    },
+    biggestShift,
+    moments,
+    photos,
+    places,
+    finalReflection,
+    generatedAt: new Date().toISOString(),
+    modelUsed: 'resilient-offline-engine',
+    hasSufficientContext: true,
+  };
+}
+
+// Endpoint: Feature 5: Personal Wrapped Retrospective API
+app.post('/api/gemini/wrapped', async (req, res) => {
+  try {
+    const sanitizeText = (txt: any): string => (typeof txt === 'string' ? txt.replace(/[<>]/g, '').trim() : '');
+    const rawEntries = Array.isArray(req.body?.entries) ? req.body.entries : [];
+    const userId = typeof req.body?.userId === 'string' ? req.body.userId : 'anonymous';
+
+    // Sort chronologically (earliest to latest)
+    const sortedEntries = rawEntries
+      .filter((e: any) => e && typeof e === 'object')
+      .sort((a: any, b: any) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
+
+    const totalCount = sortedEntries.length;
+    if (totalCount === 0) {
+      return res.json(generateSmartLocalWrapped([]));
+    }
+
+    // Prepare prompt with real journal data
+    const entriesSummary = sortedEntries.map((e: any, idx: number) => {
+      const dateStr = e.createdAt ? new Date(e.createdAt).toISOString().split('T')[0] : `Entry ${idx + 1}`;
+      const title = sanitizeText(e.title || 'Untitled');
+      const mood = sanitizeText(e.mood || 'thoughtful');
+      const tags = Array.isArray(e.tags) ? e.tags.join(', ') : '';
+      const content = sanitizeText((e.content || '').slice(0, 400));
+      return `[Entry ${idx + 1} | ID: ${e.id} | Date: ${dateStr} | Mood: ${mood} | Tags: ${tags}]\nTitle: ${title}\nContent: ${content}`;
+    }).join('\n\n');
+
+    const systemInstruction = `You are the lead narrative biographer and insightful retrospective companion for ReflectAI Journal.
+Your task is to synthesize the user's authentic journal entries into a personal, thoughtful, and celebratory "Personal Wrapped" story.
+
+CRITICAL DIRECTIVES:
+1. STRICT DATA GROUNDING: Only use facts, themes, and quotes present in the provided journal entries. Never invent accomplishments, places, photos, or life events.
+2. NO CORPORATE JARGON: Avoid dry business metrics. Keep tone warm, personal, reflective, calm, celebratory, and empowering.
+3. OUTPUT FORMAT: Respond ONLY with a valid JSON object matching the exact schema below:
+
+{
+  "themes": [
+    {
+      "name": "Concise Theme Name (e.g. Deep Study & Focus)",
+      "count": 3,
+      "description": "Short grounded explanation of how this theme appeared in their reflections"
+    }
+  ],
+  "biggestShift": {
+    "headline": "Concise headline of the biggest shift over time (e.g. Evolving from Reactivity to Intentional Pauses)",
+    "explanation": "2-3 sentences summarizing the shift with authentic contrast between earlier and recent reflections",
+    "earlierExcerpt": {
+      "title": "Title of earlier entry",
+      "date": "Date string",
+      "text": "Direct quote or close excerpt from earlier entry"
+    },
+    "recentExcerpt": {
+      "title": "Title of recent entry",
+      "date": "Date string",
+      "text": "Direct quote or close excerpt from recent entry"
+    }
+  },
+  "finalReflection": {
+    "headline": "A memorable, resonant 1-line closing title",
+    "narrative": "A warm, personal 3-4 sentence summary synthesizing their unique journaling journey, their honesty, and their growth.",
+    "celebrationQuote": "An inspiring, personal closing takeaway quote."
+  }
+}`;
+
+    const prompt = `Here are the authentic journal entries for this user in chronological order:
+
+${entriesSummary}
+
+Synthesize these entries for the user's Personal Wrapped. Extract 2 to 4 genuine recurring themes, the biggest shift over time with direct excerpts, and a deeply resonant final reflection narrative.`;
+
+    const result = await generateContentWithFallback(prompt, systemInstruction);
+
+    // Compute deterministic stats
+    const localFallback = generateSmartLocalWrapped(sortedEntries);
+
+    if (result.text) {
+      let parsed: any = null;
+      try {
+        parsed = JSON.parse(result.text);
+      } catch (parseErr) {
+        const jsonMatch = result.text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            parsed = JSON.parse(jsonMatch[0]);
+          } catch {
+            parsed = null;
+          }
+        }
+      }
+
+      if (parsed && typeof parsed === 'object') {
+        const responsePayload = {
+          stats: localFallback.stats,
+          themes: Array.isArray(parsed.themes) && parsed.themes.length > 0
+            ? parsed.themes.map((t: any) => ({
+                name: sanitizeText(t.name || 'Personal Growth'),
+                count: typeof t.count === 'number' ? t.count : Math.max(1, Math.floor(totalCount / 2)),
+                description: sanitizeText(t.description || 'Recurring focus in your journal.'),
+              }))
+            : localFallback.themes,
+          emotionalJourney: localFallback.emotionalJourney,
+          biggestShift: (parsed.biggestShift && parsed.biggestShift.headline)
+            ? {
+                headline: sanitizeText(parsed.biggestShift.headline),
+                explanation: sanitizeText(parsed.biggestShift.explanation || localFallback.biggestShift.explanation),
+                earlierExcerpt: {
+                  title: sanitizeText(parsed.biggestShift.earlierExcerpt?.title || localFallback.biggestShift.earlierExcerpt.title),
+                  date: sanitizeText(parsed.biggestShift.earlierExcerpt?.date || localFallback.biggestShift.earlierExcerpt.date),
+                  text: sanitizeText(parsed.biggestShift.earlierExcerpt?.text || localFallback.biggestShift.earlierExcerpt.text),
+                },
+                recentExcerpt: {
+                  title: sanitizeText(parsed.biggestShift.recentExcerpt?.title || localFallback.biggestShift.recentExcerpt.title),
+                  date: sanitizeText(parsed.biggestShift.recentExcerpt?.date || localFallback.biggestShift.recentExcerpt.date),
+                  text: sanitizeText(parsed.biggestShift.recentExcerpt?.text || localFallback.biggestShift.recentExcerpt.text),
+                },
+              }
+            : localFallback.biggestShift,
+          moments: localFallback.moments,
+          photos: localFallback.photos,
+          places: localFallback.places,
+          finalReflection: (parsed.finalReflection && parsed.finalReflection.narrative)
+            ? {
+                headline: sanitizeText(parsed.finalReflection.headline || localFallback.finalReflection.headline),
+                narrative: sanitizeText(parsed.finalReflection.narrative),
+                celebrationQuote: sanitizeText(parsed.finalReflection.celebrationQuote || localFallback.finalReflection.celebrationQuote),
+              }
+            : localFallback.finalReflection,
+          generatedAt: new Date().toISOString(),
+          modelUsed: result.modelUsed,
+          hasSufficientContext: true,
+        };
+
+        return res.json(responsePayload);
+      }
+    }
+
+    return res.json(localFallback);
+  } catch (error: any) {
+    console.error('Error in /api/gemini/wrapped:', error);
+    const safeEntries = Array.isArray(req.body?.entries) ? req.body.entries : [];
+    const local = generateSmartLocalWrapped(safeEntries);
+    return res.json(local);
+  }
+});
+
+
 // Vite & Static Asset Handling
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
@@ -2112,3 +2539,4 @@ async function startServer() {
 }
 
 startServer();
+

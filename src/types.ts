@@ -29,6 +29,8 @@ export interface JournalEntry {
   aiKeyInsights?: string[];
   aiActionItems?: string[];
   messages: ChatMessage[];
+  photos?: string[];
+  location?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -192,6 +194,91 @@ export interface WellbeingAnalysisResponse {
   timestamp: string;
   modelUsed: string;
 }
+
+export interface WrappedPeriodStats {
+  periodTitle: string;
+  dateRangeFormatted: string;
+  totalEntries: number;
+  activeDaysCount: number;
+  currentStreak: number;
+  longestStreak: number;
+  totalWordsLogged: number;
+  isInitialJourney: boolean;
+}
+
+export interface WrappedThemeItem {
+  name: string;
+  count: number;
+  description: string;
+  sampleExcerpt?: string;
+}
+
+export interface WrappedMoodJourney {
+  dominantMood: string;
+  earlierMood: string;
+  recentMood: string;
+  progressionDescription: string;
+  moodCounts: Record<string, number>;
+  totalLoggedMoods: number;
+}
+
+export interface WrappedShift {
+  headline: string;
+  explanation: string;
+  earlierExcerpt: {
+    title: string;
+    date: string;
+    text: string;
+  };
+  recentExcerpt: {
+    title: string;
+    date: string;
+    text: string;
+  };
+}
+
+export interface WrappedMomentItem {
+  id: string;
+  title: string;
+  date: string;
+  mood: string;
+  tags: string[];
+  excerpt: string;
+}
+
+export interface WrappedMemoryPhoto {
+  entryId: string;
+  entryTitle: string;
+  date: string;
+  photoUrl: string;
+  caption?: string;
+}
+
+export interface WrappedPlaceItem {
+  name: string;
+  entryTitle: string;
+  date: string;
+  mentionCount: number;
+}
+
+export interface WrappedDataResponse {
+  stats: WrappedPeriodStats;
+  themes: WrappedThemeItem[];
+  emotionalJourney: WrappedMoodJourney;
+  biggestShift: WrappedShift;
+  moments: WrappedMomentItem[];
+  photos: WrappedMemoryPhoto[];
+  places: WrappedPlaceItem[];
+  finalReflection: {
+    headline: string;
+    narrative: string;
+    celebrationQuote: string;
+  };
+  generatedAt: string;
+  modelUsed: string;
+  hasSufficientContext: boolean;
+}
+
 
 
 

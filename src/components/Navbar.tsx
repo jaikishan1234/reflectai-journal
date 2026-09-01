@@ -191,7 +191,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       </div>
                     </button>
 
-                    {/* Wrapped Placeholder */}
+                    {/* Wrapped */}
                     <button
                       id="dropdown-wrapped"
                       onClick={() => handleSelectInsightView('wrapped')}
@@ -205,9 +205,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <div>
                         <div className="text-xs font-semibold flex items-center gap-1.5">
                           <span>Wrapped</span>
-                          <span className="text-[9px] bg-stone-800 text-stone-400 border border-stone-700 px-1.5 py-0.2 rounded-full font-medium">Preview</span>
+                          <span className="text-[9px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.2 rounded-full font-medium">New</span>
                         </div>
-                        <div className="text-[10px] text-stone-400">Milestone retrospective capsule</div>
+                        <div className="text-[10px] text-stone-400">Milestone story & retrospective</div>
                       </div>
                     </button>
                   </div>

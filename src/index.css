@@ -1,1 +1,29 @@
 @import "tailwindcss";
+
+@layer utilities {
+  .wrapped-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(168, 162, 158, 0.2) transparent;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    transition: scrollbar-color 0.2s ease-in-out;
+  }
+  .wrapped-scroll:hover {
+    scrollbar-color: rgba(168, 162, 158, 0.45) transparent;
+  }
+  .wrapped-scroll::-webkit-scrollbar {
+    width: 4px;
+    height: 0px;
+  }
+  .wrapped-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .wrapped-scroll::-webkit-scrollbar-thumb {
+    background: rgba(168, 162, 158, 0.2);
+    border-radius: 9999px;
+    transition: background 0.2s ease-in-out;
+  }
+  .wrapped-scroll:hover::-webkit-scrollbar-thumb {
+    background: rgba(168, 162, 158, 0.45);
+  }
+}
