@@ -8,6 +8,20 @@ interface ReflectionCardProps {
   onAskFollowUp: (question: string) => void;
 }
 
+const isHumanReadableClientText = (text?: string): boolean => {
+  if (!text || typeof text !== 'string') return false;
+  const clean = text.trim();
+  if (clean.length < 3) return false;
+  const lower = clean.toLowerCase();
+  const scriptKeywords = ['ytplayer', 'client_canary_state', 'ytcfg', 'webpackchunk', '__next_data__', 'window.', 'document.', 'function(', '<script', '</', 'var ', 'const ', 'let '];
+  for (const kw of scriptKeywords) {
+    if (lower.includes(kw)) return false;
+  }
+  if (/<[a-z][\s\S]*>/i.test(clean)) return false;
+  if ((clean.startsWith('{') && clean.endsWith('}')) || (clean.startsWith('[') && clean.endsWith(']'))) return false;
+  return true;
+};
+
 export const ReflectionCard: React.FC<ReflectionCardProps> = ({ entry, onAskFollowUp }) => {
   const [completedItems, setCompletedItems] = useState<Record<number, boolean>>({});
   const [copied, setCopied] = useState(false);
@@ -147,7 +161,7 @@ export const ReflectionCard: React.FC<ReflectionCardProps> = ({ entry, onAskFoll
               </h4>
               <div className="text-[11px] text-stone-400 truncate">
                 <span className="text-cyan-300 font-mono">{entry.webLinkAttachment.domain}</span>
-                {entry.webLinkAttachment.description && ` • ${entry.webLinkAttachment.description}`}
+                {entry.webLinkAttachment.description && isHumanReadableClientText(entry.webLinkAttachment.description) && ` • ${entry.webLinkAttachment.description}`}
               </div>
             </div>
           </div>

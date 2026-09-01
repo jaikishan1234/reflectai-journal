@@ -672,6 +672,93 @@ app.post('/api/youtube/metadata', async (req, res) => {
   }
 });
 
+// Helper to validate and ensure extracted text is genuine human-readable prose (never raw JS, HTML, or page state)
+function isHumanReadableWebText(text: string): boolean {
+  if (!text || typeof text !== 'string') return false;
+  const clean = text.trim();
+  if (clean.length < 3) return false;
+
+  // Patterns indicating raw code, scripts, markup, JSON or internal page variables
+  const codeKeywords = [
+    'ytplayer',
+    'client_canary_state',
+    'ytcfg',
+    'webpackchunk',
+    '__next_data__',
+    'window.',
+    'document.',
+    'function(',
+    'function (',
+    'void 0',
+    'undefined',
+    'eval(',
+    'json.parse',
+    'json.stringify',
+    'localstorage',
+    'sessionstorage',
+    'addeventlistener',
+    'prototype',
+    'constructor',
+    '<!doctype',
+    '<html',
+    '<script',
+    '<style',
+    '<meta',
+    '</',
+    'var ',
+    'const ',
+    'let ',
+    'return ',
+    'typeof ',
+    '===',
+    '!==',
+    '=>',
+  ];
+
+  const lower = clean.toLowerCase();
+  for (const kw of codeKeywords) {
+    if (lower.includes(kw)) {
+      return false;
+    }
+  }
+
+  // Reject unparsed HTML tags
+  if (/<[a-z][\s\S]*>/i.test(clean)) {
+    return false;
+  }
+
+  // Reject JSON objects/arrays or JS object literals
+  if ((clean.startsWith('{') && clean.endsWith('}')) || (clean.startsWith('[') && clean.endsWith(']'))) {
+    return false;
+  }
+  if (/["']?[a-zA-Z0-9_$]+["']?\s*:\s*["'{[]/.test(clean)) {
+    return false;
+  }
+
+  // Reject dense code punctuation
+  if (/[;{}]{2,}/.test(clean)) {
+    return false;
+  }
+
+  // Token analysis
+  const words = clean.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return false;
+
+  let codeTokens = 0;
+  for (const word of words) {
+    if (word.length > 40) return false;
+    if (/[_$=<>{}\[\]\(\)\\\^~]/.test(word) || word.includes(';') || word.includes('&&') || word.includes('||')) {
+      codeTokens++;
+    }
+  }
+
+  if (codeTokens / words.length > 0.2) {
+    return false;
+  }
+
+  return true;
+}
+
 // API: Web Link Metadata & Content Extractor (Safe, SSRF-guarded, rate-bounded)
 app.post('/api/web/metadata', async (req, res) => {
   try {
@@ -705,10 +792,14 @@ app.post('/api/web/metadata', async (req, res) => {
     }
 
     const canonicalUrl = parsedUrl.href;
-    const cleanDomain = parsedUrl.hostname.replace(/^www\./, '');
+    let cleanDomain = parsedUrl.hostname.replace(/^www\./, '');
+    const isYouTubeDomain = cleanDomain === 'youtube.com' || cleanDomain.endsWith('.youtube.com') || cleanDomain === 'youtu.be';
+    if (isYouTubeDomain) {
+      cleanDomain = 'youtube.com';
+    }
 
-    let title = cleanDomain;
-    let description = '';
+    let title = isYouTubeDomain ? 'YouTube Video' : cleanDomain;
+    let description = isYouTubeDomain ? 'YouTube video page context attached to reflection.' : '';
     let imageUrl = '';
     let extractedSnippet = '';
 
@@ -752,11 +843,17 @@ app.post('/api/web/metadata', async (req, res) => {
                                htmlChunk.match(/<meta\s+[^>]*content=["']([^"']+)["'][^>]*property=["']og:title["']/i) ||
                                htmlChunk.match(/<meta\s+[^>]*name=["']twitter:title["'][^>]*content=["']([^"']+)["']/i);
           if (ogTitleMatch && ogTitleMatch[1]) {
-            title = decodeHtmlEntities(ogTitleMatch[1].trim());
+            const candidateTitle = decodeHtmlEntities(ogTitleMatch[1].trim());
+            if (isHumanReadableWebText(candidateTitle)) {
+              title = candidateTitle;
+            }
           } else {
             const titleTagMatch = htmlChunk.match(/<title[^>]*>([^<]+)<\/title>/i);
             if (titleTagMatch && titleTagMatch[1]) {
-              title = decodeHtmlEntities(titleTagMatch[1].trim());
+              const candidateTitle = decodeHtmlEntities(titleTagMatch[1].trim());
+              if (isHumanReadableWebText(candidateTitle)) {
+                title = candidateTitle;
+              }
             }
           }
 
@@ -766,7 +863,10 @@ app.post('/api/web/metadata', async (req, res) => {
                               htmlChunk.match(/<meta\s+[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i) ||
                               htmlChunk.match(/<meta\s+[^>]*name=["']twitter:description["'][^>]*content=["']([^"']+)["']/i);
           if (ogDescMatch && ogDescMatch[1]) {
-            description = decodeHtmlEntities(ogDescMatch[1].trim()).slice(0, 300);
+            const candidateDesc = decodeHtmlEntities(ogDescMatch[1].trim()).slice(0, 300);
+            if (isHumanReadableWebText(candidateDesc)) {
+              description = candidateDesc;
+            }
           }
 
           // Extract og:image
@@ -785,20 +885,22 @@ app.post('/api/web/metadata', async (req, res) => {
             }
           }
 
-          // Extract clean readable text snippet
-          let cleanBody = htmlChunk
-            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
-            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
-            .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, ' ')
-            .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, ' ')
-            .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, ' ')
-            .replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gi, ' ')
-            .replace(/<!--[\s\S]*?-->/g, ' ')
-            .replace(/<[^>]+>/g, ' ');
+          // Extract clean readable text snippet only if not YouTube and text passes human-readable validation
+          if (!isYouTubeDomain) {
+            let cleanBody = htmlChunk
+              .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
+              .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
+              .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, ' ')
+              .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, ' ')
+              .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, ' ')
+              .replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gi, ' ')
+              .replace(/<!--[\s\S]*?-->/g, ' ')
+              .replace(/<[^>]+>/g, ' ');
 
-          cleanBody = decodeHtmlEntities(cleanBody).replace(/\s+/g, ' ').trim();
-          if (cleanBody.length > 30) {
-            extractedSnippet = cleanBody.slice(0, 500);
+            cleanBody = decodeHtmlEntities(cleanBody).replace(/\s+/g, ' ').trim();
+            if (cleanBody.length > 30 && isHumanReadableWebText(cleanBody.slice(0, 300))) {
+              extractedSnippet = cleanBody.slice(0, 500);
+            }
           }
         }
       }
@@ -806,17 +908,19 @@ app.post('/api/web/metadata', async (req, res) => {
       console.warn('[Web Metadata] Fetch notice for domain:', cleanDomain, fetchErr);
     }
 
-    if (!description) {
-      description = 'Web page context attached to reflection.';
+    if (!description || !isHumanReadableWebText(description)) {
+      description = isYouTubeDomain 
+        ? 'YouTube video page context attached to reflection.'
+        : 'Web page context attached to reflection.';
     }
 
     return res.json({
       url: canonicalUrl,
-      title: title || cleanDomain,
+      title: title || (isYouTubeDomain ? 'YouTube Video' : cleanDomain),
       description,
       domain: cleanDomain,
       imageUrl: imageUrl || undefined,
-      extractedSnippet: extractedSnippet || undefined,
+      extractedSnippet: (extractedSnippet && isHumanReadableWebText(extractedSnippet)) ? extractedSnippet : undefined,
     });
   } catch (err: any) {
     console.error('Error in /api/web/metadata:', err);
@@ -868,8 +972,11 @@ app.post('/api/gemini/reflect', async (req, res) => {
     if (youtubeAttachment && youtubeAttachment.title) {
       contextString += `\n- Attached YouTube Video Context:\n  * Title: "${youtubeAttachment.title}"\n  * Channel: "${youtubeAttachment.channelTitle || 'YouTube'}"\n  * URL: ${youtubeAttachment.url}`;
     }
-    if (webLinkAttachment && webLinkAttachment.title) {
-      contextString += `\n- Attached Web Link Context:\n  * Title: "${webLinkAttachment.title}"\n  * Domain: "${webLinkAttachment.domain || 'Web'}"\n  * URL: ${webLinkAttachment.url}\n  * Description: "${webLinkAttachment.description || ''}"\n  * Page Excerpt: "${(webLinkAttachment.extractedSnippet || '').slice(0, 300)}"`;
+    if (webLinkAttachment && webLinkAttachment.url) {
+      const cleanWebTitle = isHumanReadableWebText(webLinkAttachment.title) ? webLinkAttachment.title : (webLinkAttachment.domain || 'Attached Web Page');
+      const cleanWebDesc = isHumanReadableWebText(webLinkAttachment.description) ? webLinkAttachment.description : 'Web page context attached to reflection.';
+      const cleanSnippet = isHumanReadableWebText(webLinkAttachment.extractedSnippet) ? `\n  * Page Excerpt: "${webLinkAttachment.extractedSnippet.slice(0, 300)}"` : '';
+      contextString += `\n- Attached Web Link Context:\n  * Title: "${cleanWebTitle}"\n  * Domain: "${webLinkAttachment.domain || 'Web'}"\n  * URL: ${webLinkAttachment.url}\n  * Description: "${cleanWebDesc}"${cleanSnippet}`;
     }
     if (photoAttachment) {
       contextString += `\n- Attached Photo / Image Context:\n  * File Name: "${photoAttachment.fileName || 'Memory Photo'}"\n  * Caption: "${photoAttachment.caption || 'No caption provided'}"`;

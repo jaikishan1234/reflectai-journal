@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { JournalEntry, ReflectionMode, YouTubeAttachment, WebLinkAttachment, PhotoAttachment } from '../types';
 import { Sparkles, Save, Tag, Smile, Lightbulb, RotateCw, AlertCircle, Video, Plus, X, ExternalLink, Clock, Link as LinkIcon, Globe, Image as ImageIcon } from 'lucide-react';
+import { AttachedContextsGrid } from './AttachedContextsGrid';
 
 interface JournalEditorProps {
   entry: JournalEntry;
@@ -701,121 +702,6 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
         </div>
       )}
 
-      {/* Attached YouTube Context Card */}
-      {youtubeAttachment && (
-        <div 
-          id="attached-youtube-card"
-          className="mb-4 p-3 bg-stone-950/80 border border-stone-800 hover:border-stone-700 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            {youtubeAttachment.thumbnailUrl ? (
-              <img
-                src={youtubeAttachment.thumbnailUrl}
-                alt={youtubeAttachment.title}
-                referrerPolicy="no-referrer"
-                className="w-16 h-12 rounded-lg object-cover bg-stone-900 border border-stone-800 shrink-0"
-              />
-            ) : (
-              <div className="w-16 h-12 rounded-lg bg-red-950/40 border border-red-800/40 flex items-center justify-center shrink-0">
-                <Video className="w-6 h-6 text-red-400" />
-              </div>
-            )}
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 text-[10px] font-semibold text-red-400 uppercase tracking-wider">
-                <Video className="w-3 h-3" />
-                <span>Attached Video Context</span>
-              </div>
-              <h4 className="text-xs font-bold text-stone-200 truncate mt-0.5" title={youtubeAttachment.title}>
-                {youtubeAttachment.title}
-              </h4>
-              <div className="text-[11px] text-stone-400 truncate">
-                {youtubeAttachment.channelTitle || 'YouTube'}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-            <a
-              href={youtubeAttachment.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 px-2.5 py-1 text-[11px] text-stone-400 hover:text-stone-200 bg-stone-900 hover:bg-stone-850 border border-stone-800 rounded-md transition-colors"
-              title="Watch video on YouTube"
-            >
-              <ExternalLink className="w-3 h-3" />
-              <span>Watch</span>
-            </a>
-
-            <button
-              id="remove-youtube-attachment-btn"
-              onClick={handleRemoveYoutubeAttachment}
-              className="p-1 text-stone-500 hover:text-rose-400 hover:bg-stone-900 rounded-md transition-colors cursor-pointer"
-              title="Remove attached video"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Attached Web Link Context Card */}
-      {webLinkAttachment && (
-        <div 
-          id="attached-weblink-card"
-          className="mb-4 p-3 bg-stone-950/80 border border-cyan-500/20 hover:border-cyan-500/40 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            {webLinkAttachment.imageUrl ? (
-              <img
-                src={webLinkAttachment.imageUrl}
-                alt={webLinkAttachment.title}
-                referrerPolicy="no-referrer"
-                className="w-16 h-12 rounded-lg object-cover bg-stone-900 border border-stone-800 shrink-0"
-              />
-            ) : (
-              <div className="w-16 h-12 rounded-lg bg-cyan-950/40 border border-cyan-800/40 flex items-center justify-center shrink-0">
-                <Globe className="w-6 h-6 text-cyan-400" />
-              </div>
-            )}
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 text-[10px] font-semibold text-cyan-400 uppercase tracking-wider">
-                <LinkIcon className="w-3 h-3" />
-                <span>Attached Web Context</span>
-              </div>
-              <h4 className="text-xs font-bold text-stone-200 truncate mt-0.5" title={webLinkAttachment.title}>
-                {webLinkAttachment.title}
-              </h4>
-              <div className="text-[11px] text-stone-400 truncate">
-                <span className="text-cyan-300/90 font-mono">{webLinkAttachment.domain}</span>
-                {webLinkAttachment.description && ` • ${webLinkAttachment.description}`}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-            <a
-              href={webLinkAttachment.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 px-2.5 py-1 text-[11px] text-stone-400 hover:text-cyan-200 bg-stone-900 hover:bg-stone-850 border border-stone-800 rounded-md transition-colors"
-              title="Open link in new tab"
-            >
-              <ExternalLink className="w-3 h-3" />
-              <span>Open</span>
-            </a>
-
-            <button
-              id="remove-weblink-attachment-btn"
-              onClick={handleRemoveWebLinkAttachment}
-              className="p-1 text-stone-500 hover:text-rose-400 hover:bg-stone-900 rounded-md transition-colors cursor-pointer"
-              title="Remove attached link"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Photo Staging & Preview Drawer (Before Attachment Confirmation) */}
       {stagedPhoto && (
         <div 
@@ -904,70 +790,20 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
         </div>
       )}
 
-      {/* Attached Photo Context Card */}
-      {photoAttachment && !stagedPhoto && (
-        <div 
-          id="attached-photo-card"
-          className="mb-4 p-3.5 bg-stone-950/85 border border-amber-500/30 hover:border-amber-500/50 rounded-xl flex flex-col gap-3 transition-colors"
-        >
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold text-amber-400 uppercase tracking-wider">
-              <ImageIcon className="w-3.5 h-3.5" />
-              <span>Attached Photo Context</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setPhotoError(null);
-                  fileInputRef.current?.click();
-                }}
-                className="text-[11px] text-stone-400 hover:text-amber-300 transition-colors cursor-pointer px-2 py-0.5 rounded-md hover:bg-stone-900"
-                title="Choose a different image"
-              >
-                Replace Photo
-              </button>
-              <button
-                id="remove-photo-attachment-btn"
-                type="button"
-                onClick={handleRemovePhotoAttachment}
-                className="p-1 text-stone-500 hover:text-rose-400 hover:bg-stone-900 rounded-md transition-colors cursor-pointer"
-                title="Remove photo context"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3 items-start">
-            <div className="relative rounded-lg overflow-hidden bg-stone-900 border border-stone-800 shrink-0 max-w-xs w-full sm:w-48">
-              <img
-                src={photoAttachment.url}
-                alt={photoAttachment.caption || 'Attached journal photo'}
-                referrerPolicy="no-referrer"
-                className="w-full h-36 object-cover"
-              />
-            </div>
-
-            <div className="flex-1 w-full space-y-1.5">
-              <label className="text-[11px] font-medium text-stone-400 block">
-                Optional caption:
-              </label>
-              <input
-                id="photo-caption-input"
-                type="text"
-                placeholder="What does this moment mean? (e.g. Finally finished the project)"
-                value={photoCaptionInput}
-                onChange={(e) => handlePhotoCaptionChange(e.target.value)}
-                className="w-full bg-stone-900 border border-stone-800 rounded-lg px-3 py-1.5 text-xs text-stone-200 placeholder-stone-600 focus:outline-hidden focus:border-amber-500/50"
-              />
-              <p className="text-[10px] text-stone-500">
-                The photo and caption ground your reflection. Removing the photo will not delete the journal entry.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Compact Attached Contexts Grid Section */}
+      <AttachedContextsGrid
+        youtubeAttachment={youtubeAttachment}
+        webLinkAttachment={webLinkAttachment}
+        photoAttachment={stagedPhoto ? null : photoAttachment}
+        onRemoveYoutube={handleRemoveYoutubeAttachment}
+        onRemoveWebLink={handleRemoveWebLinkAttachment}
+        onRemovePhoto={handleRemovePhotoAttachment}
+        onReplacePhoto={() => {
+          setPhotoError(null);
+          fileInputRef.current?.click();
+        }}
+        onUpdatePhotoCaption={handlePhotoCaptionChange}
+      />
 
       {/* Mood Selector Chips */}
       <div className="mb-4">
