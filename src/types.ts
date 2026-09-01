@@ -58,6 +58,21 @@ export interface FileAttachment {
   attachedAt?: string;
 }
 
+export interface SpotifyAttachment {
+  url: string;
+  trackId?: string;
+  trackName: string;
+  artistName?: string;
+  albumName?: string;
+  thumbnailUrl?: string;
+  durationMs?: number;
+  durationFormatted?: string;
+  releaseDate?: string;
+  isExplicit?: boolean;
+  previewUrl?: string;
+  attachedAt?: string;
+}
+
 export interface JournalEntry {
   id: string;
   userId: string;
@@ -73,6 +88,7 @@ export interface JournalEntry {
   photos?: string[];
   photoAttachment?: PhotoAttachment | null;
   fileAttachment?: FileAttachment | null;
+  spotifyAttachment?: SpotifyAttachment | null;
   location?: string;
   youtubeAttachment?: YouTubeAttachment | null;
   webLinkAttachment?: WebLinkAttachment | null;
@@ -90,6 +106,7 @@ export interface GenerateReflectionRequest {
   webLinkAttachment?: WebLinkAttachment | null;
   photoAttachment?: PhotoAttachment | null;
   fileAttachment?: FileAttachment | null;
+  spotifyAttachment?: SpotifyAttachment | null;
   history?: Array<{
     role: 'user' | 'assistant';
     content: string;

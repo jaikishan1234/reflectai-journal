@@ -118,6 +118,27 @@ function decodeHtmlEntities(str: string): string {
     });
 }
 
+// Helper to parse ISO 8601 duration string (e.g. PT3M20S or PT200S) into milliseconds
+function parseIsoDuration(durationStr: string): number | undefined {
+  if (!durationStr || typeof durationStr !== 'string') return undefined;
+  const match = durationStr.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/i);
+  if (!match) return undefined;
+  const hours = parseInt(match[1] || '0', 10);
+  const minutes = parseInt(match[2] || '0', 10);
+  const seconds = parseInt(match[3] || '0', 10);
+  const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+  return totalSeconds > 0 ? totalSeconds * 1000 : undefined;
+}
+
+// Helper to format duration in milliseconds to "M:SS"
+function formatDuration(durationMs?: number): string | undefined {
+  if (typeof durationMs !== 'number' || durationMs <= 0 || isNaN(durationMs)) return undefined;
+  const totalSeconds = Math.round(durationMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+}
+
 // Helper to validate and reject private / SSRF targets
 function isPrivateOrLocalHost(hostname: string): boolean {
   const host = hostname.toLowerCase().trim();
@@ -162,7 +183,8 @@ function generateSmartLocalReflection(
   youtubeAttachment?: any,
   webLinkAttachment?: any,
   photoAttachment?: any,
-  fileAttachment?: any
+  fileAttachment?: any,
+  spotifyAttachment?: any
 ): { reply: string; insights: string[]; actionItems: string[] } {
   const cleanPrompt = prompt.trim();
   const titleText = entryTitle || 'Your Reflection';
@@ -209,6 +231,17 @@ function generateSmartLocalReflection(
   }
   if (fileAttachment) {
     contextNotes += `\n\n*Attached Document Context*: Attached document **"${fileAttachment.fileName || 'Document'}"** (${(fileAttachment.fileType || 'file').toUpperCase()})${fileAttachment.description ? ` - "${fileAttachment.description}"` : ''}.`;
+  }
+  if (spotifyAttachment && spotifyAttachment.trackName) {
+    const durationText = spotifyAttachment.durationFormatted || (typeof spotifyAttachment.durationMs === 'number' ? formatDuration(spotifyAttachment.durationMs) : '');
+    const details = [
+      spotifyAttachment.albumName ? `Album: "${spotifyAttachment.albumName}"` : '',
+      durationText ? `Duration: ${durationText}` : '',
+      spotifyAttachment.releaseDate ? `Release: ${spotifyAttachment.releaseDate}` : '',
+      spotifyAttachment.isExplicit !== undefined ? `Explicit: ${spotifyAttachment.isExplicit ? 'Yes' : 'No'}` : '',
+    ].filter(Boolean).join(', ');
+
+    contextNotes += `\n\n*Attached Music Context*: Connected song **"${spotifyAttachment.trackName}"** by ${spotifyAttachment.artistName || 'Spotify'}${details ? ` (${details})` : ''}.`;
   }
 
   switch (mode) {
@@ -420,6 +453,9 @@ function extractRelevantJournalEntries(rawQuestion: string, entries: any[]): {
     const webDesc = (e.webLinkAttachment?.description || '').toLowerCase();
     const photoFileName = (e.photoAttachment?.fileName || '').toLowerCase();
     const photoCaption = (e.photoAttachment?.caption || '').toLowerCase();
+    const spotifyTrack = (e.spotifyAttachment?.trackName || '').toLowerCase();
+    const spotifyArtist = (e.spotifyAttachment?.artistName || '').toLowerCase();
+    const spotifyAlbum = (e.spotifyAttachment?.albumName || '').toLowerCase();
 
     const titleWords = title.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
     const tagWords = tags.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
@@ -427,6 +463,7 @@ function extractRelevantJournalEntries(rawQuestion: string, entries: any[]): {
     const ytWords = `${ytTitle} ${ytChannel}`.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
     const webWords = `${webTitle} ${webDomain} ${webDesc}`.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
     const photoWords = `${photoFileName} ${photoCaption}`.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
+    const spotifyWords = `${spotifyTrack} ${spotifyArtist} ${spotifyAlbum}`.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
 
     if (isBroadOverview) {
       // For broad queries, all available entries receive baseline relevance
@@ -452,6 +489,9 @@ function extractRelevantJournalEntries(rawQuestion: string, entries: any[]): {
         if (photoWords.includes(token) || photoFileName.includes(token) || photoCaption.includes(token)) {
           score += 15;
         }
+        if (spotifyWords.includes(token) || spotifyTrack.includes(token) || spotifyArtist.includes(token)) {
+          score += 15;
+        }
       }
       // If query is specifically about youtube/video and entry has youtube attachment
       if ((substantiveTokens.includes('youtub') || substantiveTokens.includes('video') || substantiveTokens.includes('watch') || qLower.includes('youtube') || qLower.includes('video')) && e.youtubeAttachment) {
@@ -467,6 +507,10 @@ function extractRelevantJournalEntries(rawQuestion: string, entries: any[]): {
       }
       // If query is specifically about file/document/pdf/notes and entry has file attachment
       if ((substantiveTokens.includes('file') || substantiveTokens.includes('doc') || substantiveTokens.includes('pdf') || substantiveTokens.includes('document') || qLower.includes('file') || qLower.includes('document') || qLower.includes('pdf')) && e.fileAttachment) {
+        score += 20;
+      }
+      // If query is specifically about spotify/music/song/track/album and entry has spotify attachment
+      if ((substantiveTokens.includes('spotifi') || substantiveTokens.includes('music') || substantiveTokens.includes('song') || substantiveTokens.includes('track') || substantiveTokens.includes('album') || substantiveTokens.includes('listen') || qLower.includes('spotify') || qLower.includes('music') || qLower.includes('song') || qLower.includes('track')) && e.spotifyAttachment) {
         score += 20;
       }
     }
@@ -501,6 +545,9 @@ function generateEntryRelevanceSnippet(entry: any, keywords?: string[]): string 
   }
   if (entry.fileAttachment) {
     attachmentMention += ` [Attached Document: "${entry.fileAttachment.fileName || 'Document'}" (${(entry.fileAttachment.fileType || 'file').toUpperCase()})${entry.fileAttachment.description ? ` - "${entry.fileAttachment.description}"` : ''}]`;
+  }
+  if (entry.spotifyAttachment) {
+    attachmentMention += ` [Attached Song: "${entry.spotifyAttachment.trackName || 'Track'}" by ${entry.spotifyAttachment.artistName || 'Spotify'}]`;
   }
 
   if (!content) return `Recorded in reflection "${entry.title || 'Untitled Reflection'}".${attachmentMention}`;
@@ -681,6 +728,281 @@ app.post('/api/youtube/metadata', async (req, res) => {
   } catch (err: any) {
     console.error('Error in /api/youtube/metadata:', err);
     return res.status(500).json({ error: 'Failed to process YouTube video context.' });
+  }
+});
+
+// API: Spotify Track Metadata Resolver (Public oEmbed + OpenGraph + Safe Zero-Crash Fallback)
+app.post('/api/spotify/metadata', async (req, res) => {
+  try {
+    const data = (req.body && typeof req.body === 'object') ? req.body : {};
+    const rawUrl = typeof data.url === 'string' ? data.url.trim() : '';
+
+    if (!rawUrl) {
+      return res.status(400).json({ error: 'Please provide a valid Spotify track URL.' });
+    }
+
+    // Protocol & Basic Validation
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`);
+    } catch {
+      return res.status(400).json({
+        error: 'Invalid URL format. Please provide a standard Spotify track link (e.g. https://open.spotify.com/track/...).'
+      });
+    }
+
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      return res.status(400).json({
+        error: 'Unsupported protocol. Only http:// and https:// URLs are allowed.'
+      });
+    }
+
+    if (isPrivateOrLocalHost(parsedUrl.hostname)) {
+      return res.status(400).json({
+        error: 'Private or internal addresses cannot be attached as music context.'
+      });
+    }
+
+    // Check domain is Spotify
+    const hostname = parsedUrl.hostname.toLowerCase().replace(/^www\./, '');
+    const isSpotifyHost = hostname === 'open.spotify.com' || hostname === 'spotify.com' || hostname === 'spotify.link';
+
+    if (!isSpotifyHost) {
+      return res.status(400).json({
+        error: 'Please provide a link from Spotify (e.g. https://open.spotify.com/track/...).'
+      });
+    }
+
+    // Extract track ID if present
+    const trackMatch = parsedUrl.pathname.match(/\/track\/([a-zA-Z0-9]+)/i);
+    const trackId = trackMatch ? trackMatch[1] : undefined;
+
+    const canonicalUrl = trackId 
+      ? `https://open.spotify.com/track/${trackId}`
+      : parsedUrl.href;
+
+    let trackName = trackId ? `Spotify Track (${trackId.slice(0, 8)}...)` : 'Spotify Track';
+    let artistName = 'Spotify';
+    let albumName: string | undefined = undefined;
+    let thumbnailUrl: string | undefined = undefined;
+    let durationMs: number | undefined = undefined;
+    let releaseDate: string | undefined = undefined;
+    let isExplicit: boolean | undefined = undefined;
+
+    // 1. Fetch Spotify oEmbed (official Spotify public oEmbed endpoint, zero key required)
+    try {
+      const oembedUrl = `https://open.spotify.com/oembed?url=${encodeURIComponent(canonicalUrl)}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      const oembedRes = await fetch(oembedUrl, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'ReflectAI-Journal/1.0',
+        },
+      });
+      clearTimeout(timeoutId);
+
+      if (oembedRes.ok) {
+        const oembedData: any = await oembedRes.json();
+        if (oembedData && typeof oembedData === 'object') {
+          if (typeof oembedData.title === 'string' && oembedData.title.trim()) {
+            trackName = oembedData.title.trim();
+          }
+          if (typeof oembedData.thumbnail_url === 'string' && oembedData.thumbnail_url.trim()) {
+            thumbnailUrl = oembedData.thumbnail_url.trim();
+          }
+        }
+      }
+    } catch (oembedErr) {
+      console.warn('[Spotify oEmbed] Non-fatal notice:', oembedErr);
+    }
+
+    // 2. Fetch OpenGraph and structured metadata (artist, album, duration, release date, explicit)
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      const ogRes = await fetch(canonicalUrl, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+          'Accept': 'text/html,application/xhtml+xml',
+        },
+      });
+      clearTimeout(timeoutId);
+
+      if (ogRes.ok) {
+        const html = await ogRes.text();
+        const ogTitleMatch = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i) ||
+                             html.match(/<meta\s+content=["']([^"']+)["']\s+property=["']og:title["']/i);
+        const ogDescMatch = html.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i) ||
+                            html.match(/<meta\s+content=["']([^"']+)["']\s+property=["']og:description["']/i);
+        const ogImageMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
+                             html.match(/<meta\s+content=["']([^"']+)["']\s+property=["']og:image["']/i);
+
+        if (ogTitleMatch && ogTitleMatch[1] && !ogTitleMatch[1].startsWith('Spotify - Web Player')) {
+          trackName = ogTitleMatch[1].trim();
+        }
+        if (ogImageMatch && ogImageMatch[1]) {
+          thumbnailUrl = ogImageMatch[1].trim();
+        }
+        if (ogDescMatch && ogDescMatch[1]) {
+          const desc = ogDescMatch[1].trim();
+          // Spotify desc format: "Artist · Album · Song · Year"
+          const parts = desc.split(' · ').map(p => p.trim()).filter(Boolean);
+          if (parts.length >= 1 && parts[0] !== 'Spotify') {
+            artistName = parts[0];
+          }
+          if (parts.length >= 2 && parts[1] !== 'Song' && parts[1] !== 'Single') {
+            albumName = parts[1];
+          }
+          // Check if last item is a 4-digit release year
+          const lastPart = parts[parts.length - 1];
+          if (/^\d{4}$/.test(lastPart)) {
+            releaseDate = lastPart;
+          }
+        }
+
+        // Parse JSON-LD metadata
+        const jsonLdMatch = html.match(/<script\s+type=["']application\/ld\+json["']>([\s\S]*?)<\/script>/i);
+        if (jsonLdMatch && jsonLdMatch[1]) {
+          try {
+            const jsonLd = JSON.parse(jsonLdMatch[1]);
+            if (jsonLd) {
+              if (jsonLd.duration && typeof jsonLd.duration === 'string') {
+                const parsedMs = parseIsoDuration(jsonLd.duration);
+                if (parsedMs) durationMs = parsedMs;
+              }
+              if (jsonLd.datePublished && typeof jsonLd.datePublished === 'string') {
+                releaseDate = jsonLd.datePublished.trim();
+              }
+              if (jsonLd.name && typeof jsonLd.name === 'string' && (!trackName || trackName.startsWith('Spotify Track'))) {
+                trackName = jsonLd.name.trim();
+              }
+              if (jsonLd.inAlbum?.name && typeof jsonLd.inAlbum.name === 'string' && !albumName) {
+                albumName = jsonLd.inAlbum.name.trim();
+              }
+              if (Array.isArray(jsonLd.byArtist) && jsonLd.byArtist[0]?.name && (!artistName || artistName === 'Spotify')) {
+                artistName = jsonLd.byArtist[0].name.trim();
+              }
+            }
+          } catch {
+            // Non-fatal
+          }
+        }
+
+        // Check meta tags for duration
+        if (!durationMs) {
+          const durationMeta = html.match(/<meta\s+(?:property|name)=["'](?:music:duration|music:song:duration)["']\s+content=["'](\d+)["']/i) ||
+                               html.match(/<meta\s+content=["'](\d+)["']\s+(?:property|name)=["'](?:music:duration|music:song:duration)["']/i);
+          if (durationMeta && durationMeta[1]) {
+            const num = parseInt(durationMeta[1], 10);
+            durationMs = num > 10000 ? num : num * 1000;
+          }
+        }
+
+        // Check meta tags for release date
+        if (!releaseDate) {
+          const relMeta = html.match(/<meta\s+(?:property|name)=["'](?:music:release_date|release_date)["']\s+content=["']([^"']+)["']/i) ||
+                          html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["'](?:music:release_date|release_date)["']/i);
+          if (relMeta && relMeta[1]) {
+            releaseDate = relMeta[1].trim();
+          }
+        }
+
+        // Check explicit flag
+        const explicitMatch = html.match(/["'](?:is_explicit|isExplicit|explicit)["']\s*:\s*(true|false)/i);
+        if (explicitMatch) {
+          isExplicit = explicitMatch[1].toLowerCase() === 'true';
+        }
+      }
+    } catch (ogErr) {
+      console.warn('[Spotify OpenGraph] Non-fatal notice:', ogErr);
+    }
+
+    // 3. Fallback to Spotify Embed Data for 100% accurate track duration / release / explicit data
+    if ((!durationMs || isExplicit === undefined || !releaseDate) && trackId) {
+      try {
+        const embedController = new AbortController();
+        const embedTimeout = setTimeout(() => embedController.abort(), 3500);
+
+        const embedRes = await fetch(`https://open.spotify.com/embed/track/${trackId}`, {
+          signal: embedController.signal,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml',
+          },
+        });
+        clearTimeout(embedTimeout);
+
+        if (embedRes.ok) {
+          const embedHtml = await embedRes.text();
+          const nextDataMatch = embedHtml.match(/<script\s+id=["']__NEXT_DATA__["']\s+type=["']application\/json["']>([\s\S]*?)<\/script>/i);
+          if (nextDataMatch && nextDataMatch[1]) {
+            const nextData = JSON.parse(nextDataMatch[1]);
+            const entity = nextData?.props?.pageProps?.state?.data?.entity;
+            if (entity) {
+              if (!durationMs && typeof entity.duration === 'number' && entity.duration > 0) {
+                durationMs = entity.duration;
+              }
+              if (isExplicit === undefined && typeof entity.isExplicit === 'boolean') {
+                isExplicit = entity.isExplicit;
+              }
+              if (!releaseDate && entity.releaseDate) {
+                if (typeof entity.releaseDate === 'string') {
+                  releaseDate = entity.releaseDate.split('T')[0];
+                } else if (typeof entity.releaseDate?.isoString === 'string') {
+                  releaseDate = entity.releaseDate.isoString.split('T')[0];
+                }
+              }
+              if (!albumName && entity.album?.name) {
+                albumName = entity.album.name;
+              }
+              if ((!artistName || artistName === 'Spotify') && Array.isArray(entity.artists) && entity.artists[0]?.name) {
+                artistName = entity.artists.map((a: any) => a.name).join(', ');
+              }
+              if (!thumbnailUrl && entity.coverArt?.sources?.[0]?.url) {
+                thumbnailUrl = entity.coverArt.sources[0].url;
+              }
+            }
+          }
+        }
+      } catch {
+        // Non-fatal
+      }
+    }
+
+    // Format human-readable duration
+    const durationFormatted = formatDuration(durationMs);
+
+    // Sanitize output fields
+    const sanitizedTitle = trackName.replace(/<[^>]+>/g, '').slice(0, 200);
+    const sanitizedArtist = (artistName || 'Spotify').replace(/<[^>]+>/g, '').slice(0, 200);
+    const sanitizedAlbum = albumName ? albumName.replace(/<[^>]+>/g, '').slice(0, 200) : undefined;
+    const sanitizedReleaseDate = releaseDate ? releaseDate.replace(/<[^>]+>/g, '').slice(0, 50) : undefined;
+
+    return res.json({
+      url: canonicalUrl,
+      trackId,
+      trackName: sanitizedTitle,
+      artistName: sanitizedArtist,
+      albumName: sanitizedAlbum,
+      thumbnailUrl,
+      durationMs,
+      durationFormatted,
+      releaseDate: sanitizedReleaseDate,
+      isExplicit,
+    });
+  } catch (err: any) {
+    console.error('Error in /api/spotify/metadata:', err);
+    // Safe graceful fallback so attachment never breaks reflection
+    return res.json({
+      url: req.body?.url || 'https://open.spotify.com',
+      trackName: 'Spotify Track',
+      artistName: 'Spotify',
+      description: 'Spotify track attached to reflection.',
+    });
   }
 });
 
@@ -1041,6 +1363,7 @@ app.post('/api/gemini/reflect', async (req, res) => {
     const webLinkAttachment = (data.webLinkAttachment && typeof data.webLinkAttachment === 'object') ? data.webLinkAttachment : null;
     const photoAttachment = (data.photoAttachment && typeof data.photoAttachment === 'object') ? data.photoAttachment : null;
     const fileAttachment = (data.fileAttachment && typeof data.fileAttachment === 'object') ? data.fileAttachment : null;
+    const spotifyAttachment = (data.spotifyAttachment && typeof data.spotifyAttachment === 'object') ? data.spotifyAttachment : null;
 
     if (!prompt && history.length === 0) {
       return res.status(400).json({
@@ -1086,6 +1409,17 @@ app.post('/api/gemini/reflect', async (req, res) => {
       const cleanDocExcerpt = fileAttachment.extractedText ? `\n  * Document Text Excerpt: "${fileAttachment.extractedText.slice(0, 500)}"` : '';
       contextString += `\n- Attached Document / File Context:\n  * File Name: "${fileAttachment.fileName || 'Document'}"\n  * File Type: "${(fileAttachment.fileType || 'file').toUpperCase()}"${cleanDocDesc}${cleanDocExcerpt}`;
     }
+    if (spotifyAttachment && spotifyAttachment.trackName) {
+      const cleanTrack = spotifyAttachment.trackName;
+      const cleanArtist = spotifyAttachment.artistName || 'Spotify';
+      const cleanAlbum = spotifyAttachment.albumName ? `\n  * Album: "${spotifyAttachment.albumName}"` : '';
+      const cleanDuration = (spotifyAttachment.durationFormatted || (typeof spotifyAttachment.durationMs === 'number' ? formatDuration(spotifyAttachment.durationMs) : ''))
+        ? `\n  * Duration: "${spotifyAttachment.durationFormatted || formatDuration(spotifyAttachment.durationMs)}"`
+        : '';
+      const cleanRelease = spotifyAttachment.releaseDate ? `\n  * Release Date: "${spotifyAttachment.releaseDate}"` : '';
+      const cleanExplicit = spotifyAttachment.isExplicit !== undefined ? `\n  * Explicit: ${spotifyAttachment.isExplicit ? 'Yes' : 'No'}` : '';
+      contextString += `\n- Attached Music / Spotify Context:\n  * Song Title: "${cleanTrack}"\n  * Artist: "${cleanArtist}"${cleanAlbum}${cleanDuration}${cleanRelease}${cleanExplicit}\n  * Source: Spotify (${spotifyAttachment.url || 'Spotify'})`;
+    }
 
     const systemInstruction = `You are ReflectAI, an intelligent, empathetic, and confidential reflection and journaling companion.
 Current Journal Context:
@@ -1095,7 +1429,8 @@ Current Journal Context:
 
 Strict Reflection Directives:
 - The user's journal reflection is the PRIMARY source of truth. Ground insights primarily in the user's authentic thoughts, feelings, and takeaways.
-- Connect the reflection gracefully to the context of attached videos, web articles, photos, or documents without pretending to know unstated full details unless mentioned by the user.
+- Connect the reflection gracefully to the context of attached videos, web articles, photos, documents, or music without pretending to know unstated full details.
+- For attached music context: treat the song as supporting context; do not assume unstated emotions, memories, or reasons why the user chose the song unless expressed directly by the user.
 - Maintain a warm, supportive, and non-judgmental tone.
 - Use clear Markdown formatting with headers, bullet points, and bold text.
 - Be concise yet insightful.
@@ -1139,7 +1474,8 @@ Strict Reflection Directives:
         youtubeAttachment,
         webLinkAttachment,
         photoAttachment,
-        fileAttachment
+        fileAttachment,
+        spotifyAttachment
       );
       return res.json({
         reply: localResult.reply,
@@ -1189,7 +1525,9 @@ Strict Reflection Directives:
       Array.isArray(req.body?.tags) ? req.body.tags : [],
       (req.body?.youtubeAttachment && typeof req.body?.youtubeAttachment === 'object') ? req.body.youtubeAttachment : null,
       (req.body?.webLinkAttachment && typeof req.body?.webLinkAttachment === 'object') ? req.body.webLinkAttachment : null,
-      (req.body?.photoAttachment && typeof req.body?.photoAttachment === 'object') ? req.body.photoAttachment : null
+      (req.body?.photoAttachment && typeof req.body?.photoAttachment === 'object') ? req.body.photoAttachment : null,
+      (req.body?.fileAttachment && typeof req.body?.fileAttachment === 'object') ? req.body.fileAttachment : null,
+      (req.body?.spotifyAttachment && typeof req.body?.spotifyAttachment === 'object') ? req.body.spotifyAttachment : null
     );
     return res.json({
       reply: localResult.reply,

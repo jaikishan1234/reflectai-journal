@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { JournalEntry, ReflectionMode, YouTubeAttachment, WebLinkAttachment, PhotoAttachment, FileAttachment } from '../types';
-import { Sparkles, Save, Tag, Smile, Lightbulb, RotateCw, AlertCircle, Video, Plus, X, ExternalLink, Clock, Link as LinkIcon, Globe, Image as ImageIcon, FileText } from 'lucide-react';
+import { JournalEntry, ReflectionMode, YouTubeAttachment, WebLinkAttachment, PhotoAttachment, FileAttachment, SpotifyAttachment } from '../types';
+import { Sparkles, Save, Tag, Smile, Lightbulb, RotateCw, AlertCircle, Video, Plus, X, ExternalLink, Clock, Link as LinkIcon, Globe, Image as ImageIcon, FileText, Music } from 'lucide-react';
 import { AttachedContextsGrid } from './AttachedContextsGrid';
 import { isSupportedDocument, extractDocumentText, formatFileSize, readFileAsDataUrl } from '../lib/documentParser';
 
@@ -125,6 +125,13 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
   const [fileDescriptionInput, setFileDescriptionInput] = useState(entry.fileAttachment?.description || '');
   const [fileError, setFileError] = useState<string | null>(null);
 
+  // Spotify / Music Context Attachment State
+  const [spotifyAttachment, setSpotifyAttachment] = useState<SpotifyAttachment | null>(entry.spotifyAttachment || null);
+  const [showSpotifyInput, setShowSpotifyInput] = useState(false);
+  const [spotifyUrlInput, setSpotifyUrlInput] = useState('');
+  const [isLoadingSpotify, setIsLoadingSpotify] = useState(false);
+  const [spotifyError, setSpotifyError] = useState<string | null>(null);
+
   const contextMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
@@ -175,6 +182,11 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
     setStagedFile(null);
     setFileDescriptionInput(entry.fileAttachment?.description || '');
     setFileError(null);
+
+    setSpotifyAttachment(entry.spotifyAttachment || null);
+    setShowSpotifyInput(false);
+    setSpotifyUrlInput('');
+    setSpotifyError(null);
 
     setIsContextMenuOpen(false);
     setHasUnsavedChanges(false);
@@ -319,6 +331,65 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
 
   const handleRemoveWebLinkAttachment = () => {
     setWebLinkAttachment(null);
+    setHasUnsavedChanges(true);
+  };
+
+  // Spotify / Music Handlers
+  const handleFetchSpotifyMetadata = async () => {
+    const rawUrl = spotifyUrlInput.trim();
+    if (!rawUrl) {
+      setSpotifyError('Please enter a Spotify track URL.');
+      return;
+    }
+
+    if (!rawUrl.includes('spotify.com') && !rawUrl.startsWith('spotify:')) {
+      setSpotifyError('Please enter a valid Spotify track URL (e.g. https://open.spotify.com/track/...)');
+      return;
+    }
+
+    setIsLoadingSpotify(true);
+    setSpotifyError(null);
+
+    try {
+      const response = await fetch('/api/spotify/metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: rawUrl }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch Spotify track metadata.');
+      }
+
+      const attachment: SpotifyAttachment = {
+        url: data.url,
+        trackId: data.trackId,
+        trackName: data.trackName,
+        artistName: data.artistName,
+        albumName: data.albumName,
+        thumbnailUrl: data.thumbnailUrl,
+        durationMs: data.durationMs,
+        durationFormatted: data.durationFormatted,
+        releaseDate: data.releaseDate,
+        isExplicit: data.isExplicit,
+        attachedAt: new Date().toISOString(),
+      };
+
+      setSpotifyAttachment(attachment);
+      setShowSpotifyInput(false);
+      setSpotifyUrlInput('');
+      setHasUnsavedChanges(true);
+    } catch (err: any) {
+      setSpotifyError(err.message || 'Could not attach Spotify track. Please check the URL.');
+    } finally {
+      setIsLoadingSpotify(false);
+    }
+  };
+
+  const handleRemoveSpotifyAttachment = () => {
+    setSpotifyAttachment(null);
     setHasUnsavedChanges(true);
   };
 
@@ -476,6 +547,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
       webLinkAttachment: webLinkAttachment || undefined,
       photoAttachment: photoAttachment || undefined,
       fileAttachment: fileAttachment || undefined,
+      spotifyAttachment: spotifyAttachment || undefined,
       updatedAt: new Date().toISOString(),
     };
     onSave(updatedEntry);
@@ -495,6 +567,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
       webLinkAttachment: webLinkAttachment || undefined,
       photoAttachment: photoAttachment || undefined,
       fileAttachment: fileAttachment || undefined,
+      spotifyAttachment: spotifyAttachment || undefined,
       updatedAt: new Date().toISOString(),
     };
     onSave(updatedEntry);
@@ -659,12 +732,29 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                     setFileError(null);
                     docInputRef.current?.click();
                   }}
-                  className="w-full px-3 py-2 text-left text-xs text-stone-200 hover:bg-stone-800/80 flex items-center gap-2 transition-colors cursor-pointer"
+                  className="w-full px-3 py-2 text-left text-xs text-stone-200 hover:bg-stone-800/80 flex items-center gap-2 transition-colors cursor-pointer border-b border-stone-800/60"
                 >
                   <FileText className="w-4 h-4 text-emerald-400 shrink-0" />
                   <div>
                     <div className="font-semibold">File / Document</div>
                     <div className="text-[10px] text-stone-400">Attach PDF, DOC, TXT, MD</div>
+                  </div>
+                </button>
+
+                <button
+                  id="add-spotify-context-option"
+                  onClick={() => {
+                    setShowSpotifyInput(true);
+                    setShowYoutubeInput(false);
+                    setShowWebLinkInput(false);
+                    setIsContextMenuOpen(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-stone-200 hover:bg-stone-800/80 flex items-center gap-2 transition-colors cursor-pointer"
+                >
+                  <Music className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <div>
+                    <div className="font-semibold">Spotify / Music</div>
+                    <div className="text-[10px] text-stone-400">Attach song or track context</div>
                   </div>
                 </button>
               </div>
@@ -749,6 +839,73 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
             <div className="mt-2 text-[11px] text-rose-400 flex items-center gap-1">
               <AlertCircle className="w-3.5 h-3.5 shrink-0" />
               <span>{youtubeError}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Spotify URL Input Form Drawer */}
+      {showSpotifyInput && !spotifyAttachment && (
+        <div className="mb-4 p-3.5 bg-stone-950/90 border border-emerald-500/30 rounded-xl animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-300">
+              <Music className="w-4 h-4 text-emerald-400" />
+              <span>Attach Spotify / Music Context</span>
+            </div>
+            <button
+              onClick={() => {
+                setShowSpotifyInput(false);
+                setSpotifyError(null);
+              }}
+              className="text-stone-400 hover:text-stone-200 text-xs p-1 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <p className="text-[11px] text-stone-400 mb-2.5">
+            Connect a song that accompanied your thoughts or captures your mood. Your reflection remains the central focus.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              id="spotify-url-input"
+              type="text"
+              placeholder="Paste Spotify track link (e.g. https://open.spotify.com/track/...)"
+              value={spotifyUrlInput}
+              onChange={(e) => {
+                setSpotifyUrlInput(e.target.value);
+                if (spotifyError) setSpotifyError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleFetchSpotifyMetadata();
+                }
+              }}
+              className="w-full bg-stone-900 border border-stone-800 rounded-lg px-3 py-1.5 text-xs text-stone-200 placeholder-stone-600 focus:outline-hidden focus:border-emerald-500/50"
+            />
+            <button
+              id="attach-spotify-btn"
+              onClick={handleFetchSpotifyMetadata}
+              disabled={isLoadingSpotify || !spotifyUrlInput.trim()}
+              className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-semibold text-xs rounded-lg transition-colors cursor-pointer disabled:opacity-40 shrink-0 flex items-center justify-center gap-1.5"
+            >
+              {isLoadingSpotify ? (
+                <>
+                  <RotateCw className="w-3.5 h-3.5 animate-spin text-stone-950" />
+                  <span>Fetching...</span>
+                </>
+              ) : (
+                <span>Attach Music</span>
+              )}
+            </button>
+          </div>
+
+          {spotifyError && (
+            <div className="mt-2 text-[11px] text-rose-400 flex items-center gap-1">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>{spotifyError}</span>
             </div>
           )}
         </div>
@@ -993,10 +1150,12 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
         webLinkAttachment={webLinkAttachment}
         photoAttachment={stagedPhoto ? null : photoAttachment}
         fileAttachment={stagedFile ? null : fileAttachment}
+        spotifyAttachment={spotifyAttachment}
         onRemoveYoutube={handleRemoveYoutubeAttachment}
         onRemoveWebLink={handleRemoveWebLinkAttachment}
         onRemovePhoto={handleRemovePhotoAttachment}
         onRemoveFile={handleRemoveFileAttachment}
+        onRemoveSpotify={handleRemoveSpotifyAttachment}
         onReplacePhoto={() => {
           setPhotoError(null);
           fileInputRef.current?.click();

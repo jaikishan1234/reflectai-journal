@@ -10,7 +10,7 @@ import {
   X, 
   Layers
 } from 'lucide-react';
-import { YouTubeAttachment, WebLinkAttachment, PhotoAttachment, FileAttachment } from '../types';
+import { YouTubeAttachment, WebLinkAttachment, PhotoAttachment, FileAttachment, SpotifyAttachment } from '../types';
 import { ContextDetailModal, GenericContextItem, ContextType } from './ContextDetailModal';
 import { formatFileSize, getDocumentTypeLabel } from '../lib/documentParser';
 
@@ -19,14 +19,15 @@ interface AttachedContextsGridProps {
   webLinkAttachment?: WebLinkAttachment | null;
   photoAttachment?: PhotoAttachment | null;
   fileAttachment?: FileAttachment | null;
+  spotifyAttachment?: SpotifyAttachment | null;
   // Future extensibility props
-  spotifyAttachment?: any;
   calendarAttachment?: any;
   githubAttachment?: any;
   onRemoveYoutube: () => void;
   onRemoveWebLink: () => void;
   onRemovePhoto: () => void;
   onRemoveFile: () => void;
+  onRemoveSpotify?: () => void;
   onReplacePhoto?: () => void;
   onUpdatePhotoCaption?: (caption: string) => void;
 }
@@ -43,6 +44,7 @@ export const AttachedContextsGrid: React.FC<AttachedContextsGridProps> = ({
   onRemoveWebLink,
   onRemovePhoto,
   onRemoveFile,
+  onRemoveSpotify,
   onReplacePhoto,
   onUpdatePhotoCaption,
 }) => {
@@ -141,15 +143,15 @@ export const AttachedContextsGrid: React.FC<AttachedContextsGridProps> = ({
       });
     }
 
-    // 5. Extensibility hooks for future types (Spotify, Calendar, GitHub)
-
+    // 5. Spotify / Music Attachment
     if (spotifyAttachment) {
       items.push({
-        id: 'spotify-ctx',
+        id: `spotify-${spotifyAttachment.trackId || spotifyAttachment.url}`,
         type: 'spotify',
-        label: 'Music',
-        title: spotifyAttachment.title || 'Track',
-        subtitle: spotifyAttachment.artist || 'Spotify',
+        label: 'Spotify',
+        title: spotifyAttachment.trackName || 'Attached Track',
+        subtitle: spotifyAttachment.artistName ? `${spotifyAttachment.artistName}` : 'Spotify',
+        thumbnailUrl: spotifyAttachment.thumbnailUrl,
         accent: {
           iconColor: 'text-emerald-400',
           badgeBg: 'bg-emerald-950/40',
@@ -158,10 +160,12 @@ export const AttachedContextsGrid: React.FC<AttachedContextsGridProps> = ({
           cardBorder: 'border-emerald-500/25',
           cardHover: 'hover:border-emerald-500/45 hover:bg-emerald-950/15',
         },
-        onRemove: () => {},
+        spotifyData: spotifyAttachment,
+        onRemove: onRemoveSpotify || (() => {}),
       });
     }
 
+    // Extensibility hooks for future types (Calendar, GitHub)
     if (calendarAttachment) {
       items.push({
         id: 'calendar-ctx',
@@ -213,6 +217,7 @@ export const AttachedContextsGrid: React.FC<AttachedContextsGridProps> = ({
     onRemoveWebLink,
     onRemovePhoto,
     onRemoveFile,
+    onRemoveSpotify,
     onReplacePhoto,
     onUpdatePhotoCaption,
   ]);

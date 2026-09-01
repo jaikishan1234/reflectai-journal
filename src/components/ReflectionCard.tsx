@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Markdown from 'react-markdown';
-import { Sparkles, CheckSquare, Square, Lightbulb, Copy, Check, ShieldCheck, CornerDownRight, Video, ExternalLink, Globe, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, CheckSquare, Square, Lightbulb, Copy, Check, ShieldCheck, CornerDownRight, Video, ExternalLink, Globe, Link as LinkIcon, Image as ImageIcon, FileText, Music } from 'lucide-react';
 import { JournalEntry } from '../types';
 
 interface ReflectionCardProps {
@@ -201,6 +201,73 @@ export const ReflectionCard: React.FC<ReflectionCardProps> = ({ entry, onAskFoll
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Attached File Context Preview if present */}
+      {entry.fileAttachment && (
+        <div className="mb-4 p-3 bg-stone-950/70 border border-emerald-500/20 rounded-xl flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-12 h-12 rounded-lg bg-emerald-950/40 border border-emerald-800/40 flex items-center justify-center shrink-0">
+              <FileText className="w-6 h-6 text-emerald-400" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[10px] font-semibold text-emerald-400 flex items-center gap-1 uppercase tracking-wider">
+                <FileText className="w-3 h-3" />
+                <span>Attached Document ({entry.fileAttachment.fileType?.toUpperCase()})</span>
+              </div>
+              <h4 className="text-xs font-semibold text-stone-200 truncate mt-0.5" title={entry.fileAttachment.fileName}>
+                {entry.fileAttachment.fileName}
+              </h4>
+              {entry.fileAttachment.description && (
+                <div className="text-[11px] text-stone-400 truncate">
+                  {entry.fileAttachment.description}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Attached Spotify Music Context Preview if present */}
+      {entry.spotifyAttachment && (
+        <div className="mb-4 p-3 bg-stone-950/70 border border-emerald-500/20 rounded-xl flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            {entry.spotifyAttachment.thumbnailUrl ? (
+              <img
+                src={entry.spotifyAttachment.thumbnailUrl}
+                alt={entry.spotifyAttachment.trackName || 'Spotify artwork'}
+                referrerPolicy="no-referrer"
+                className="w-12 h-12 rounded-lg object-cover bg-stone-900 border border-stone-800 shrink-0 shadow-xs"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-lg bg-emerald-950/40 border border-emerald-800/40 flex items-center justify-center shrink-0">
+                <Music className="w-6 h-6 text-emerald-400" />
+              </div>
+            )}
+            <div className="min-w-0">
+              <div className="text-[10px] font-semibold text-emerald-400 flex items-center gap-1 uppercase tracking-wider">
+                <Music className="w-3 h-3" />
+                <span>Connected Spotify Track</span>
+              </div>
+              <h4 className="text-xs font-semibold text-stone-200 truncate mt-0.5" title={entry.spotifyAttachment.trackName}>
+                {entry.spotifyAttachment.trackName || 'Track'}
+              </h4>
+              <div className="text-[11px] text-stone-400 truncate">
+                {entry.spotifyAttachment.artistName || 'Artist'}{entry.spotifyAttachment.albumName ? ` • ${entry.spotifyAttachment.albumName}` : ''}
+              </div>
+            </div>
+          </div>
+
+          <a
+            href={entry.spotifyAttachment.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 px-2.5 py-1 text-[11px] text-emerald-400 hover:text-emerald-300 bg-emerald-950/30 hover:bg-emerald-950/50 border border-emerald-800/40 rounded-md transition-colors shrink-0"
+          >
+            <ExternalLink className="w-3 h-3" />
+            <span>Spotify</span>
+          </a>
         </div>
       )}
 

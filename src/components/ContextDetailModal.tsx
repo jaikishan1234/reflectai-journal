@@ -14,7 +14,7 @@ import {
   Clock,
   HardDrive
 } from 'lucide-react';
-import { YouTubeAttachment, WebLinkAttachment, PhotoAttachment, FileAttachment } from '../types';
+import { YouTubeAttachment, WebLinkAttachment, PhotoAttachment, FileAttachment, SpotifyAttachment } from '../types';
 import { getDocumentTypeLabel, formatFileSize } from '../lib/documentParser';
 
 export type ContextType = 'youtube' | 'weblink' | 'photo' | 'file' | 'spotify' | 'calendar' | 'github';
@@ -38,6 +38,7 @@ export interface GenericContextItem {
   webLinkData?: WebLinkAttachment;
   photoData?: PhotoAttachment;
   fileData?: FileAttachment;
+  spotifyData?: SpotifyAttachment;
   genericData?: {
     description?: string;
     url?: string;
@@ -469,8 +470,85 @@ export const ContextDetailModal: React.FC<ContextDetailModalProps> = ({
             </div>
           )}
 
-          {/* Generic / Future Types (Spotify, Calendar, GitHub) */}
-          {!['youtube', 'weblink', 'photo', 'file'].includes(context.type) && (
+          {/* Spotify / Music Detail View */}
+          {context.type === 'spotify' && context.spotifyData && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row items-start gap-4 p-4 bg-stone-950/80 border border-emerald-500/20 rounded-xl">
+                {context.spotifyData.thumbnailUrl ? (
+                  <img
+                    src={context.spotifyData.thumbnailUrl}
+                    alt={context.spotifyData.trackName || 'Spotify album artwork'}
+                    referrerPolicy="no-referrer"
+                    className="w-24 h-24 rounded-lg object-cover bg-stone-900 border border-stone-800 shrink-0 shadow-md"
+                  />
+                ) : (
+                  <div className="w-24 h-24 rounded-lg bg-emerald-950/40 border border-emerald-800/40 flex items-center justify-center shrink-0">
+                    <Music className="w-10 h-10 text-emerald-400" />
+                  </div>
+                )}
+
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-950/50 border border-emerald-800/50 text-[10px] font-semibold text-emerald-400">
+                    <Music className="w-3 h-3 text-emerald-400" />
+                    <span>Spotify Track</span>
+                  </div>
+
+                  <h4 className="text-base sm:text-lg font-bold text-stone-100 leading-snug">
+                    {context.spotifyData.trackName || 'Music Track'}
+                  </h4>
+
+                  <p className="text-sm font-medium text-emerald-300">
+                    {context.spotifyData.artistName || 'Artist'}
+                  </p>
+
+                  {context.spotifyData.albumName && (
+                    <p className="text-xs text-stone-400 truncate">
+                      Album: <span className="text-stone-300">{context.spotifyData.albumName}</span>
+                    </p>
+                  )}
+
+                  {/* Spotify Track Metadata: Duration, Release date, Explicit status */}
+                  {(context.spotifyData.durationFormatted || (typeof context.spotifyData.durationMs === 'number' && context.spotifyData.durationMs > 0) || context.spotifyData.releaseDate || context.spotifyData.isExplicit !== undefined) && (
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-xs text-stone-400">
+                      {(context.spotifyData.durationFormatted || (typeof context.spotifyData.durationMs === 'number' && context.spotifyData.durationMs > 0)) && (
+                        <span id="spotify-modal-duration">
+                          Duration: <span className="text-stone-200 font-mono font-medium">{context.spotifyData.durationFormatted || `${Math.floor(context.spotifyData.durationMs! / 60000)}:${String(Math.floor((context.spotifyData.durationMs! % 60000) / 1000)).padStart(2, '0')}`}</span>
+                        </span>
+                      )}
+                      {context.spotifyData.releaseDate && (
+                        <span id="spotify-modal-releasedate">
+                          Release: <span className="text-stone-200 font-medium">{context.spotifyData.releaseDate}</span>
+                        </span>
+                      )}
+                      {context.spotifyData.isExplicit !== undefined && (
+                        <span id="spotify-modal-explicit">
+                          Explicit: <span className={`font-semibold ${context.spotifyData.isExplicit ? 'text-amber-400' : 'text-stone-300'}`}>{context.spotifyData.isExplicit ? 'Yes' : 'No'}</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Grounding Info Card */}
+              <div className="p-3.5 bg-stone-950/60 border border-stone-800/70 rounded-xl space-y-2">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-emerald-400/90 flex items-center gap-1.5">
+                  <Music className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Music Grounding in ReflectAI</span>
+                </div>
+                <p className="text-xs text-stone-300 leading-relaxed">
+                  ReflectAI uses this track's vibe, tempo, and artistic mood as tonal context when generating personalized Gemini reflections.
+                </p>
+                <div className="pt-2 border-t border-stone-800/60 flex items-center justify-between text-[11px] text-stone-400">
+                  <span>Attached: {context.spotifyData.attachedAt ? new Date(context.spotifyData.attachedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Today'}</span>
+                  <span className="text-emerald-400 font-medium">Active Mood Grounding</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Generic / Future Types (Calendar, GitHub) */}
+          {!['youtube', 'weblink', 'photo', 'file', 'spotify'].includes(context.type) && (
             <div className="space-y-4">
               <div>
                 <h4 className="text-base font-semibold text-stone-100 leading-snug">
@@ -560,6 +638,19 @@ export const ContextDetailModal: React.FC<ContextDetailModalProps> = ({
               >
                 <ExternalLink className="w-3.5 h-3.5" />
                 <span>Open Link</span>
+              </a>
+            )}
+
+            {context.type === 'spotify' && context.spotifyData && (
+              <a
+                id="modal-open-spotify-btn"
+                href={context.spotifyData.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-lg transition-colors cursor-pointer"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Open in Spotify</span>
               </a>
             )}
 
