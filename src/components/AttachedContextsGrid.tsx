@@ -10,21 +10,23 @@ import {
   X, 
   Layers
 } from 'lucide-react';
-import { YouTubeAttachment, WebLinkAttachment, PhotoAttachment } from '../types';
+import { YouTubeAttachment, WebLinkAttachment, PhotoAttachment, FileAttachment } from '../types';
 import { ContextDetailModal, GenericContextItem, ContextType } from './ContextDetailModal';
+import { formatFileSize, getDocumentTypeLabel } from '../lib/documentParser';
 
 interface AttachedContextsGridProps {
   youtubeAttachment?: YouTubeAttachment | null;
   webLinkAttachment?: WebLinkAttachment | null;
   photoAttachment?: PhotoAttachment | null;
+  fileAttachment?: FileAttachment | null;
   // Future extensibility props
-  fileAttachments?: any[];
   spotifyAttachment?: any;
   calendarAttachment?: any;
   githubAttachment?: any;
   onRemoveYoutube: () => void;
   onRemoveWebLink: () => void;
   onRemovePhoto: () => void;
+  onRemoveFile: () => void;
   onReplacePhoto?: () => void;
   onUpdatePhotoCaption?: (caption: string) => void;
 }
@@ -33,13 +35,14 @@ export const AttachedContextsGrid: React.FC<AttachedContextsGridProps> = ({
   youtubeAttachment,
   webLinkAttachment,
   photoAttachment,
-  fileAttachments = [],
+  fileAttachment,
   spotifyAttachment,
   calendarAttachment,
   githubAttachment,
   onRemoveYoutube,
   onRemoveWebLink,
   onRemovePhoto,
+  onRemoveFile,
   onReplacePhoto,
   onUpdatePhotoCaption,
 }) => {
@@ -117,27 +120,28 @@ export const AttachedContextsGrid: React.FC<AttachedContextsGridProps> = ({
       });
     }
 
-    // 4. Extensibility hooks for future types (File, Spotify, Calendar, GitHub)
-    if (fileAttachments && fileAttachments.length > 0) {
-      fileAttachments.forEach((f, idx) => {
-        items.push({
-          id: `file-${idx}`,
-          type: 'file',
-          label: 'File',
-          title: f.name || 'Document',
-          subtitle: f.size || 'Attachment',
-          accent: {
-            iconColor: 'text-emerald-400',
-            badgeBg: 'bg-emerald-950/40',
-            badgeBorder: 'border-emerald-800/40',
-            badgeText: 'text-emerald-400',
-            cardBorder: 'border-emerald-500/25',
-            cardHover: 'hover:border-emerald-500/45 hover:bg-emerald-950/15',
-          },
-          onRemove: () => {},
-        });
+    // 4. File / Document Attachment
+    if (fileAttachment) {
+      items.push({
+        id: `file-${fileAttachment.fileName}`,
+        type: 'file',
+        label: 'File',
+        title: fileAttachment.description || fileAttachment.fileName || 'Attached Document',
+        subtitle: `${fileAttachment.fileType?.toUpperCase() || 'FILE'} • ${formatFileSize(fileAttachment.sizeBytes)}`,
+        accent: {
+          iconColor: 'text-emerald-400',
+          badgeBg: 'bg-emerald-950/40',
+          badgeBorder: 'border-emerald-800/40',
+          badgeText: 'text-emerald-400',
+          cardBorder: 'border-emerald-500/25',
+          cardHover: 'hover:border-emerald-500/45 hover:bg-emerald-950/15',
+        },
+        fileData: fileAttachment,
+        onRemove: onRemoveFile,
       });
     }
+
+    // 5. Extensibility hooks for future types (Spotify, Calendar, GitHub)
 
     if (spotifyAttachment) {
       items.push({
@@ -201,13 +205,14 @@ export const AttachedContextsGrid: React.FC<AttachedContextsGridProps> = ({
     youtubeAttachment,
     webLinkAttachment,
     photoAttachment,
-    fileAttachments,
+    fileAttachment,
     spotifyAttachment,
     calendarAttachment,
     githubAttachment,
     onRemoveYoutube,
     onRemoveWebLink,
     onRemovePhoto,
+    onRemoveFile,
     onReplacePhoto,
     onUpdatePhotoCaption,
   ]);

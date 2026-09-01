@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { JournalEntry, ReflectionMode, YouTubeAttachment, WebLinkAttachment, PhotoAttachment } from '../types';
-import { Sparkles, Save, Tag, Smile, Lightbulb, RotateCw, AlertCircle, Video, Plus, X, ExternalLink, Clock, Link as LinkIcon, Globe, Image as ImageIcon } from 'lucide-react';
+import { JournalEntry, ReflectionMode, YouTubeAttachment, WebLinkAttachment, PhotoAttachment, FileAttachment } from '../types';
+import { Sparkles, Save, Tag, Smile, Lightbulb, RotateCw, AlertCircle, Video, Plus, X, ExternalLink, Clock, Link as LinkIcon, Globe, Image as ImageIcon, FileText } from 'lucide-react';
 import { AttachedContextsGrid } from './AttachedContextsGrid';
+import { isSupportedDocument, extractDocumentText, formatFileSize, readFileAsDataUrl } from '../lib/documentParser';
 
 interface JournalEditorProps {
   entry: JournalEntry;
@@ -118,8 +119,15 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
   const [photoCaptionInput, setPhotoCaptionInput] = useState(entry.photoAttachment?.caption || '');
   const [photoError, setPhotoError] = useState<string | null>(null);
 
+  // File / Document Context Attachment State
+  const [fileAttachment, setFileAttachment] = useState<FileAttachment | null>(entry.fileAttachment || null);
+  const [stagedFile, setStagedFile] = useState<FileAttachment | null>(null);
+  const [fileDescriptionInput, setFileDescriptionInput] = useState(entry.fileAttachment?.description || '');
+  const [fileError, setFileError] = useState<string | null>(null);
+
   const contextMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
 
   // Close context menu when clicking outside
   useEffect(() => {
@@ -162,6 +170,11 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
     setStagedPhoto(null);
     setPhotoCaptionInput(entry.photoAttachment?.caption || '');
     setPhotoError(null);
+
+    setFileAttachment(entry.fileAttachment || null);
+    setStagedFile(null);
+    setFileDescriptionInput(entry.fileAttachment?.description || '');
+    setFileError(null);
 
     setIsContextMenuOpen(false);
     setHasUnsavedChanges(false);
@@ -387,6 +400,70 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
     }
   };
 
+  // File / Document Selection and Staging Handlers
+  const handleDocumentSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    setFileError(null);
+
+    const validation = isSupportedDocument(file);
+    if (!validation.supported) {
+      setFileError(validation.error || 'Please select a supported document (PDF, DOC, DOCX, TXT, or MD).');
+      if (docInputRef.current) docInputRef.current.value = '';
+      return;
+    }
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      const extractedText = await extractDocumentText(file, validation.extension, dataUrl);
+
+      const staged: FileAttachment = {
+        fileName: file.name,
+        fileType: validation.extension,
+        mimeType: file.type || undefined,
+        sizeBytes: file.size,
+        dataUrl,
+        extractedText: extractedText || undefined,
+        description: fileDescriptionInput.trim() || undefined,
+        attachedAt: new Date().toISOString(),
+      };
+      setStagedFile(staged);
+    } catch (err: any) {
+      setFileError(err?.message || 'Could not process the selected document.');
+    } finally {
+      if (docInputRef.current) docInputRef.current.value = '';
+    }
+  };
+
+  const handleCommitAttachFile = () => {
+    if (!stagedFile) return;
+    const committed: FileAttachment = {
+      ...stagedFile,
+      description: fileDescriptionInput.trim() || undefined,
+      attachedAt: new Date().toISOString(),
+    };
+    setFileAttachment(committed);
+    setStagedFile(null);
+    setHasUnsavedChanges(true);
+  };
+
+  const handleCancelStagedFile = () => {
+    setStagedFile(null);
+    setFileError(null);
+    if (docInputRef.current) docInputRef.current.value = '';
+  };
+
+  const handleRemoveFileAttachment = () => {
+    setFileAttachment(null);
+    setStagedFile(null);
+    setFileDescriptionInput('');
+    setFileError(null);
+    setHasUnsavedChanges(true);
+    if (docInputRef.current) docInputRef.current.value = '';
+  };
+
   const handleSaveOnly = () => {
     const updatedEntry: JournalEntry = {
       ...entry,
@@ -398,6 +475,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
       youtubeAttachment: youtubeAttachment || undefined,
       webLinkAttachment: webLinkAttachment || undefined,
       photoAttachment: photoAttachment || undefined,
+      fileAttachment: fileAttachment || undefined,
       updatedAt: new Date().toISOString(),
     };
     onSave(updatedEntry);
@@ -416,6 +494,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
       youtubeAttachment: youtubeAttachment || undefined,
       webLinkAttachment: webLinkAttachment || undefined,
       photoAttachment: photoAttachment || undefined,
+      fileAttachment: fileAttachment || undefined,
       updatedAt: new Date().toISOString(),
     };
     onSave(updatedEntry);
@@ -434,6 +513,14 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
         accept="image/jpeg,image/png,image/webp,image/gif"
         className="hidden"
         onChange={handlePhotoSelected}
+      />
+      {/* Hidden File Input for Document Picker */}
+      <input
+        ref={docInputRef}
+        type="file"
+        accept=".pdf,.doc,.docx,.txt,.md,text/plain,text/markdown,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        className="hidden"
+        onChange={handleDocumentSelected}
       />
       {/* Error Alert Banner if any */}
       {errorMessage && (
@@ -468,6 +555,22 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
           </div>
           <button
             onClick={() => setPhotoError(null)}
+            className="text-stone-400 hover:text-stone-200 text-xs px-1 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* File / Document Error Banner if any */}
+      {fileError && (
+        <div className="mb-4 p-3 bg-rose-950/80 border border-rose-800 rounded-xl flex items-center justify-between gap-3 text-xs text-rose-200">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <span>{fileError}</span>
+          </div>
+          <button
+            onClick={() => setFileError(null)}
             className="text-stone-400 hover:text-stone-200 text-xs px-1 cursor-pointer"
           >
             ✕
@@ -540,12 +643,28 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                     setPhotoError(null);
                     fileInputRef.current?.click();
                   }}
-                  className="w-full px-3 py-2 text-left text-xs text-stone-200 hover:bg-stone-800/80 flex items-center gap-2 transition-colors cursor-pointer"
+                  className="w-full px-3 py-2 text-left text-xs text-stone-200 hover:bg-stone-800/80 flex items-center gap-2 transition-colors cursor-pointer border-b border-stone-800/60"
                 >
                   <ImageIcon className="w-4 h-4 text-amber-400 shrink-0" />
                   <div>
                     <div className="font-semibold">Photo</div>
                     <div className="text-[10px] text-stone-400">Attach visual memory</div>
+                  </div>
+                </button>
+
+                <button
+                  id="add-file-context-option"
+                  onClick={() => {
+                    setIsContextMenuOpen(false);
+                    setFileError(null);
+                    docInputRef.current?.click();
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-stone-200 hover:bg-stone-800/80 flex items-center gap-2 transition-colors cursor-pointer"
+                >
+                  <FileText className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <div>
+                    <div className="font-semibold">File / Document</div>
+                    <div className="text-[10px] text-stone-400">Attach PDF, DOC, TXT, MD</div>
                   </div>
                 </button>
               </div>
@@ -790,14 +909,94 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
         </div>
       )}
 
+      {/* Staged File / Document Attachment Drawer */}
+      {stagedFile && (
+        <div id="staged-file-panel" className="mb-4 p-3.5 bg-stone-950/90 border border-emerald-500/30 rounded-xl animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-300">
+              <FileText className="w-4 h-4 text-emerald-400" />
+              <span>Attach File / Document</span>
+            </div>
+            <button
+              onClick={handleCancelStagedFile}
+              className="text-stone-400 hover:text-stone-200 text-xs p-1"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start gap-3">
+            <div className="w-14 h-14 rounded-xl bg-emerald-950/50 border border-emerald-800/40 flex items-center justify-center shrink-0">
+              <FileText className="w-7 h-7 text-emerald-400" />
+            </div>
+
+            <div className="flex-1 w-full space-y-2">
+              <div>
+                <label htmlFor="staged-file-desc-input" className="text-[11px] font-medium text-stone-400 block mb-1">
+                  Optional note / description:
+                </label>
+                <input
+                  id="staged-file-desc-input"
+                  type="text"
+                  placeholder="What is this document about? (e.g. Project briefing notes)"
+                  value={fileDescriptionInput}
+                  onChange={(e) => setFileDescriptionInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleCommitAttachFile();
+                    }
+                  }}
+                  className="w-full bg-stone-900 border border-stone-800 rounded-lg px-3 py-1.5 text-xs text-stone-200 placeholder-stone-600 focus:outline-hidden focus:border-emerald-500/50"
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+                <div className="text-[10px] text-stone-400 truncate">
+                  <span className="font-mono uppercase text-emerald-400 font-semibold">{stagedFile.fileType}</span> • {stagedFile.fileName} ({formatFileSize(stagedFile.sizeBytes)})
+                  {stagedFile.extractedText ? (
+                    <span className="ml-1.5 text-emerald-400/90 font-medium">✓ Text extracted</span>
+                  ) : (
+                    <span className="ml-1.5 text-stone-500">• Metadata attached</span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <button
+                    type="button"
+                    id="cancel-staged-file-btn"
+                    onClick={handleCancelStagedFile}
+                    className="px-3 py-1.5 bg-stone-900 hover:bg-stone-850 text-stone-400 hover:text-stone-200 text-xs font-medium rounded-lg border border-stone-800 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    id="attach-file-btn"
+                    onClick={handleCommitAttachFile}
+                    className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-semibold text-xs rounded-lg transition-colors cursor-pointer shrink-0 flex items-center justify-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Attach File</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Compact Attached Contexts Grid Section */}
       <AttachedContextsGrid
         youtubeAttachment={youtubeAttachment}
         webLinkAttachment={webLinkAttachment}
         photoAttachment={stagedPhoto ? null : photoAttachment}
+        fileAttachment={stagedFile ? null : fileAttachment}
         onRemoveYoutube={handleRemoveYoutubeAttachment}
         onRemoveWebLink={handleRemoveWebLinkAttachment}
         onRemovePhoto={handleRemovePhotoAttachment}
+        onRemoveFile={handleRemoveFileAttachment}
         onReplacePhoto={() => {
           setPhotoError(null);
           fileInputRef.current?.click();

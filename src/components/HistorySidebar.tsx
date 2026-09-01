@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { JournalEntry } from '../types';
-import { Search, Plus, Trash2, Calendar, Download, Sparkles, Filter, Smile, Video, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
+import { Search, Plus, Trash2, Calendar, Download, Sparkles, Filter, Smile, Video, Link as LinkIcon, Image as ImageIcon, FileText } from 'lucide-react';
 
 interface HistorySidebarProps {
   entries: JournalEntry[];
@@ -199,6 +199,12 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({
                       <span className="text-[9px] px-1.5 py-0.5 bg-amber-950/40 border border-amber-800/40 rounded text-amber-300 flex items-center gap-0.5" title="Attached Photo Context">
                         <ImageIcon className="w-2.5 h-2.5" />
                         Photo
+                      </span>
+                    )}
+                    {e.fileAttachment && (
+                      <span className="text-[9px] px-1.5 py-0.5 bg-emerald-950/40 border border-emerald-800/40 rounded text-emerald-300 flex items-center gap-0.5" title={`Attached Document: ${e.fileAttachment.fileName}`}>
+                        <FileText className="w-2.5 h-2.5" />
+                        Doc
                       </span>
                     )}
                     {e.aiResponse && (

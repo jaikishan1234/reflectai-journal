@@ -3,6 +3,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
+import { PDFParse } from 'pdf-parse';
 
 dotenv.config();
 
@@ -160,7 +161,8 @@ function generateSmartLocalReflection(
   tags: string[] = [],
   youtubeAttachment?: any,
   webLinkAttachment?: any,
-  photoAttachment?: any
+  photoAttachment?: any,
+  fileAttachment?: any
 ): { reply: string; insights: string[]; actionItems: string[] } {
   const cleanPrompt = prompt.trim();
   const titleText = entryTitle || 'Your Reflection';
@@ -204,6 +206,9 @@ function generateSmartLocalReflection(
   }
   if (photoAttachment) {
     contextNotes += `\n\n*Attached Photo Memory*: Attached visual moment **"${photoAttachment.fileName || 'Memory Photo'}"**${photoAttachment.caption ? ` ("${photoAttachment.caption}")` : ''}.`;
+  }
+  if (fileAttachment) {
+    contextNotes += `\n\n*Attached Document Context*: Attached document **"${fileAttachment.fileName || 'Document'}"** (${(fileAttachment.fileType || 'file').toUpperCase()})${fileAttachment.description ? ` - "${fileAttachment.description}"` : ''}.`;
   }
 
   switch (mode) {
@@ -460,6 +465,10 @@ function extractRelevantJournalEntries(rawQuestion: string, entries: any[]): {
       if ((substantiveTokens.includes('photo') || substantiveTokens.includes('pictur') || substantiveTokens.includes('imag') || substantiveTokens.includes('screenshot') || qLower.includes('photo') || qLower.includes('image') || qLower.includes('picture')) && e.photoAttachment) {
         score += 20;
       }
+      // If query is specifically about file/document/pdf/notes and entry has file attachment
+      if ((substantiveTokens.includes('file') || substantiveTokens.includes('doc') || substantiveTokens.includes('pdf') || substantiveTokens.includes('document') || qLower.includes('file') || qLower.includes('document') || qLower.includes('pdf')) && e.fileAttachment) {
+        score += 20;
+      }
     }
 
     return { entry: e, score };
@@ -489,6 +498,9 @@ function generateEntryRelevanceSnippet(entry: any, keywords?: string[]): string 
   }
   if (entry.photoAttachment) {
     attachmentMention += ` [Attached Photo: "${entry.photoAttachment.fileName || 'Memory Photo'}"${entry.photoAttachment.caption ? ` - "${entry.photoAttachment.caption}"` : ''}]`;
+  }
+  if (entry.fileAttachment) {
+    attachmentMention += ` [Attached Document: "${entry.fileAttachment.fileName || 'Document'}" (${(entry.fileAttachment.fileType || 'file').toUpperCase()})${entry.fileAttachment.description ? ` - "${entry.fileAttachment.description}"` : ''}]`;
   }
 
   if (!content) return `Recorded in reflection "${entry.title || 'Untitled Reflection'}".${attachmentMention}`;
@@ -928,6 +940,93 @@ app.post('/api/web/metadata', async (req, res) => {
   }
 });
 
+// API: Safely Extract Text from PDF Documents
+app.post('/api/document/extract-pdf', async (req, res) => {
+  try {
+    const data = (req.body && typeof req.body === 'object') ? req.body : {};
+    const rawDataUrl = typeof data.dataUrl === 'string' ? data.dataUrl : (typeof data.base64 === 'string' ? data.base64 : '');
+
+    if (!rawDataUrl) {
+      return res.status(400).json({
+        success: false,
+        error: 'No PDF data provided.',
+      });
+    }
+
+    // Extract base64 payload
+    const base64Content = rawDataUrl.includes('base64,') ? rawDataUrl.split('base64,')[1] : rawDataUrl;
+    const pdfBuffer = Buffer.from(base64Content, 'base64');
+
+    if (!pdfBuffer || pdfBuffer.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid PDF buffer data.',
+      });
+    }
+
+    const parser = new PDFParse({ data: pdfBuffer });
+    let rawText = '';
+    let pageCount = 1;
+
+    try {
+      const parsedResult = await parser.getText();
+      pageCount = parsedResult.total || (Array.isArray(parsedResult.pages) ? parsedResult.pages.length : 1);
+
+      if (Array.isArray(parsedResult.pages) && parsedResult.pages.length > 0) {
+        rawText = parsedResult.pages
+          .map((p: any) => (p && typeof p.text === 'string') ? p.text.trim() : '')
+          .filter(Boolean)
+          .join('\n\n');
+      } else if (typeof parsedResult.text === 'string') {
+        rawText = parsedResult.text;
+      }
+    } finally {
+      if (parser && typeof (parser as any).destroy === 'function') {
+        await (parser as any).destroy();
+      }
+    }
+
+    // Clean page markers like "-- 1 of 2 --" or "-- Page 1 --"
+    let cleaned = rawText
+      .replace(/--\s*\d+\s*of\s*\d+\s*--/gi, '')
+      .replace(/--\s*Page\s*\d+\s*--/gi, '')
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Strip control chars
+      .replace(/\r\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+
+    if (!cleaned || cleaned.length === 0) {
+      return res.json({
+        success: false,
+        text: null,
+        message: 'No readable text content found in PDF.',
+      });
+    }
+
+    // Apply safe max length (6000 chars for journal context preview)
+    const MAX_PDF_CHARS = 6000;
+    let isTruncated = false;
+    if (cleaned.length > MAX_PDF_CHARS) {
+      cleaned = cleaned.slice(0, MAX_PDF_CHARS) + '...\n\n[Content truncated for journal context]';
+      isTruncated = true;
+    }
+
+    return res.json({
+      success: true,
+      text: cleaned,
+      pageCount,
+      isTruncated,
+    });
+  } catch (err: any) {
+    console.warn('[PDF Extraction] Notice:', err?.message || err);
+    return res.status(200).json({
+      success: false,
+      text: null,
+      error: 'Could not extract text from the provided PDF.',
+    });
+  }
+});
+
 // API: Generate Reflection or Multi-turn Chat Reply
 app.post('/api/gemini/reflect', async (req, res) => {
   try {
@@ -941,6 +1040,7 @@ app.post('/api/gemini/reflect', async (req, res) => {
     const youtubeAttachment = (data.youtubeAttachment && typeof data.youtubeAttachment === 'object') ? data.youtubeAttachment : null;
     const webLinkAttachment = (data.webLinkAttachment && typeof data.webLinkAttachment === 'object') ? data.webLinkAttachment : null;
     const photoAttachment = (data.photoAttachment && typeof data.photoAttachment === 'object') ? data.photoAttachment : null;
+    const fileAttachment = (data.fileAttachment && typeof data.fileAttachment === 'object') ? data.fileAttachment : null;
 
     if (!prompt && history.length === 0) {
       return res.status(400).json({
@@ -981,6 +1081,11 @@ app.post('/api/gemini/reflect', async (req, res) => {
     if (photoAttachment) {
       contextString += `\n- Attached Photo / Image Context:\n  * File Name: "${photoAttachment.fileName || 'Memory Photo'}"\n  * Caption: "${photoAttachment.caption || 'No caption provided'}"`;
     }
+    if (fileAttachment) {
+      const cleanDocDesc = fileAttachment.description ? `\n  * Description: "${fileAttachment.description}"` : '';
+      const cleanDocExcerpt = fileAttachment.extractedText ? `\n  * Document Text Excerpt: "${fileAttachment.extractedText.slice(0, 500)}"` : '';
+      contextString += `\n- Attached Document / File Context:\n  * File Name: "${fileAttachment.fileName || 'Document'}"\n  * File Type: "${(fileAttachment.fileType || 'file').toUpperCase()}"${cleanDocDesc}${cleanDocExcerpt}`;
+    }
 
     const systemInstruction = `You are ReflectAI, an intelligent, empathetic, and confidential reflection and journaling companion.
 Current Journal Context:
@@ -990,7 +1095,7 @@ Current Journal Context:
 
 Strict Reflection Directives:
 - The user's journal reflection is the PRIMARY source of truth. Ground insights primarily in the user's authentic thoughts, feelings, and takeaways.
-- Connect the reflection gracefully to the context of attached videos, web articles, or photos without pretending to know unstated full details unless mentioned by the user.
+- Connect the reflection gracefully to the context of attached videos, web articles, photos, or documents without pretending to know unstated full details unless mentioned by the user.
 - Maintain a warm, supportive, and non-judgmental tone.
 - Use clear Markdown formatting with headers, bullet points, and bold text.
 - Be concise yet insightful.
@@ -1033,7 +1138,8 @@ Strict Reflection Directives:
         Array.isArray(data.tags) ? data.tags : [],
         youtubeAttachment,
         webLinkAttachment,
-        photoAttachment
+        photoAttachment,
+        fileAttachment
       );
       return res.json({
         reply: localResult.reply,

@@ -47,6 +47,17 @@ export interface PhotoAttachment {
   attachedAt?: string;
 }
 
+export interface FileAttachment {
+  fileName: string;
+  fileType: string;
+  mimeType?: string;
+  sizeBytes: number;
+  description?: string;
+  dataUrl?: string;
+  extractedText?: string;
+  attachedAt?: string;
+}
+
 export interface JournalEntry {
   id: string;
   userId: string;
@@ -61,6 +72,7 @@ export interface JournalEntry {
   messages: ChatMessage[];
   photos?: string[];
   photoAttachment?: PhotoAttachment | null;
+  fileAttachment?: FileAttachment | null;
   location?: string;
   youtubeAttachment?: YouTubeAttachment | null;
   webLinkAttachment?: WebLinkAttachment | null;
@@ -77,6 +89,7 @@ export interface GenerateReflectionRequest {
   youtubeAttachment?: YouTubeAttachment | null;
   webLinkAttachment?: WebLinkAttachment | null;
   photoAttachment?: PhotoAttachment | null;
+  fileAttachment?: FileAttachment | null;
   history?: Array<{
     role: 'user' | 'assistant';
     content: string;

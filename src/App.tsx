@@ -176,6 +176,8 @@ export default function App() {
         tags: entry.tags,
         youtubeAttachment: entry.youtubeAttachment || null,
         webLinkAttachment: entry.webLinkAttachment || null,
+        photoAttachment: entry.photoAttachment || null,
+        fileAttachment: entry.fileAttachment || null,
       };
 
       const response = await fetch('/api/gemini/reflect', {
@@ -256,6 +258,8 @@ export default function App() {
           history: historyPayload,
           youtubeAttachment: activeEntry.youtubeAttachment || null,
           webLinkAttachment: activeEntry.webLinkAttachment || null,
+          photoAttachment: activeEntry.photoAttachment || null,
+          fileAttachment: activeEntry.fileAttachment || null,
         }),
       });
 

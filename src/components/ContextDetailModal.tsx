@@ -14,7 +14,8 @@ import {
   Clock,
   HardDrive
 } from 'lucide-react';
-import { YouTubeAttachment, WebLinkAttachment, PhotoAttachment } from '../types';
+import { YouTubeAttachment, WebLinkAttachment, PhotoAttachment, FileAttachment } from '../types';
+import { getDocumentTypeLabel, formatFileSize } from '../lib/documentParser';
 
 export type ContextType = 'youtube' | 'weblink' | 'photo' | 'file' | 'spotify' | 'calendar' | 'github';
 
@@ -36,6 +37,7 @@ export interface GenericContextItem {
   youtubeData?: YouTubeAttachment;
   webLinkData?: WebLinkAttachment;
   photoData?: PhotoAttachment;
+  fileData?: FileAttachment;
   genericData?: {
     description?: string;
     url?: string;
@@ -396,8 +398,79 @@ export const ContextDetailModal: React.FC<ContextDetailModalProps> = ({
             </div>
           )}
 
-          {/* Generic / Future Types (File, Spotify, Calendar, GitHub) */}
-          {!['youtube', 'weblink', 'photo'].includes(context.type) && (
+          {/* File / Document Context */}
+          {context.type === 'file' && context.fileData && (
+            <div className="space-y-4">
+              <div className="p-4 bg-stone-950/80 border border-emerald-500/25 rounded-xl flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-xl bg-emerald-950/50 border border-emerald-800/40 flex items-center justify-center shrink-0">
+                  <FileText className="w-6 h-6 text-emerald-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-semibold block mb-0.5">
+                    {getDocumentTypeLabel(context.fileData.fileType)}
+                  </span>
+                  <h4 className="text-sm font-semibold text-stone-100 truncate" title={context.fileData.fileName}>
+                    {context.fileData.fileName}
+                  </h4>
+                  <div className="flex items-center gap-2 text-xs text-stone-400 mt-0.5">
+                    <span className="text-stone-300 font-mono">{formatFileSize(context.fileData.sizeBytes)}</span>
+                    {context.fileData.attachedAt && (
+                      <span className="text-stone-500 text-[11px]">
+                        • {new Date(context.fileData.attachedAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {context.fileData.description && (
+                <div className="p-3 bg-stone-950/80 border border-stone-800 rounded-xl">
+                  <span className="text-[11px] font-semibold text-emerald-400 block mb-1">Document Note / Purpose</span>
+                  <p className="text-xs text-stone-200 leading-relaxed break-words">
+                    {context.fileData.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Document Text Preview */}
+              <div className="space-y-1.5">
+                <span className="text-xs font-semibold text-stone-300 block">
+                  Document Preview
+                </span>
+                {context.fileData.extractedText ? (
+                  <div className="p-3.5 bg-stone-950 border border-stone-800/90 rounded-xl max-h-56 overflow-y-auto">
+                    <pre className="text-xs text-stone-300 leading-relaxed font-mono whitespace-pre-wrap select-text">
+                      {context.fileData.extractedText}
+                    </pre>
+                  </div>
+                ) : (
+                  <div className="p-3.5 bg-stone-950/60 border border-stone-800/80 rounded-xl text-center">
+                    <p className="text-xs text-stone-400 italic">
+                      Text preview unavailable for this document. (File metadata attached to reflection)
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-[11px] text-stone-400">
+                <div className="p-2.5 bg-stone-950/70 border border-stone-800 rounded-lg">
+                  <span className="text-stone-500 block mb-0.5">File Format</span>
+                  <span className="text-stone-300 font-mono uppercase truncate block">
+                    .{context.fileData.fileType}
+                  </span>
+                </div>
+                <div className="p-2.5 bg-stone-950/70 border border-stone-800 rounded-lg">
+                  <span className="text-stone-500 block mb-0.5">Attachment State</span>
+                  <span className="text-emerald-400 font-medium truncate block">
+                    Active Grounding Context
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Generic / Future Types (Spotify, Calendar, GitHub) */}
+          {!['youtube', 'weblink', 'photo', 'file'].includes(context.type) && (
             <div className="space-y-4">
               <div>
                 <h4 className="text-base font-semibold text-stone-100 leading-snug">
@@ -452,6 +525,18 @@ export const ContextDetailModal: React.FC<ContextDetailModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {context.type === 'file' && context.fileData?.dataUrl && (
+              <a
+                id="modal-download-file-btn"
+                href={context.fileData.dataUrl}
+                download={context.fileData.fileName || 'document'}
+                className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-lg transition-colors cursor-pointer"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Download / Open</span>
+              </a>
+            )}
+
             {context.type === 'youtube' && context.youtubeData && (
               <a
                 id="modal-watch-youtube-btn"
