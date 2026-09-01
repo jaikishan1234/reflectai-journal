@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { JournalEntry } from '../types';
-import { Search, Plus, Trash2, Calendar, Download, Sparkles, Filter, Smile, Video } from 'lucide-react';
+import { Search, Plus, Trash2, Calendar, Download, Sparkles, Filter, Smile, Video, Link as LinkIcon } from 'lucide-react';
 
 interface HistorySidebarProps {
   entries: JournalEntry[];
@@ -178,6 +178,12 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({
                       <span className="text-[9px] px-1.5 py-0.5 bg-red-950/40 border border-red-800/40 rounded text-red-400 flex items-center gap-0.5" title="Connected YouTube Video">
                         <Video className="w-2.5 h-2.5" />
                         Video
+                      </span>
+                    )}
+                    {e.webLinkAttachment && (
+                      <span className="text-[9px] px-1.5 py-0.5 bg-cyan-950/40 border border-cyan-800/40 rounded text-cyan-400 flex items-center gap-0.5" title={`Connected Web Link: ${e.webLinkAttachment.domain}`}>
+                        <LinkIcon className="w-2.5 h-2.5" />
+                        Link
                       </span>
                     )}
                     {e.aiResponse && (

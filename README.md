@@ -147,3 +147,14 @@ Every interaction in the application can be verified using the following test sc
 7. **Expected Result**: Gemini incorporates the video title and channel context alongside the user's reflection; the saved entry displays the connected video badge in the history sidebar and reflection card.
 8. Navigate to **Ask My Journal** and query about the topic of the attached video (e.g., "What videos or lectures did I reflect on?").
 9. **Expected Result**: Gemini answers the question citing the journal entry with the attached video context.
+
+### Test Case 7: Web Link Context & Article Grounding
+1. In the journal editor, click **+ Add Context** in the top right.
+2. Select **Web Link**.
+3. Enter a valid web URL (e.g., an article, blog post, or documentation page).
+4. Click **Attach Link**.
+5. **Expected Result**: The backend metadata proxy validates the URL against SSRF / private IP filters, fetches Open Graph metadata (title, domain, description, image), and displays an attached context card in the editor.
+6. Write your thoughts on the article and click **Generate Gemini Reflection & Save to Firestore**.
+7. **Expected Result**: Gemini grounds its insights in both your reflection text and the attached web page context. The saved entry displays the cyan `Link` badge in the history sidebar and a preview card in the reflection view.
+8. Open **Ask My Journal** and ask a question regarding the article topic (e.g., "What articles or web resources did I read?").
+9. **Expected Result**: Gemini references the specific entry and attached web link context.

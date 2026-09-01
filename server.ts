@@ -96,6 +96,61 @@ async function generateContentWithFallback(
   };
 }
 
+// Helper to decode basic HTML entities
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&mdash;/g, '—')
+    .replace(/&ndash;/g, '–')
+    .replace(/&hellip;/g, '…')
+    .replace(/&#(\d+);/g, (_, dec) => {
+      try {
+        return String.fromCharCode(parseInt(dec, 10));
+      } catch {
+        return '';
+      }
+    });
+}
+
+// Helper to validate and reject private / SSRF targets
+function isPrivateOrLocalHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().trim();
+  if (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host === '0.0.0.0' ||
+    host === '::1' ||
+    host === '[::1]' ||
+    host.endsWith('.local') ||
+    host.endsWith('.internal') ||
+    host.includes('metadata.google') ||
+    host.includes('169.254.169.254')
+  ) {
+    return true;
+  }
+
+  // IPv4 range checks
+  const ipv4Match = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4Match) {
+    const p1 = parseInt(ipv4Match[1], 10);
+    const p2 = parseInt(ipv4Match[2], 10);
+    if (p1 === 10) return true; // 10.0.0.0/8
+    if (p1 === 127) return true; // 127.0.0.0/8
+    if (p1 === 0) return true; // 0.0.0.0/8
+    if (p1 === 169 && p2 === 254) return true; // 169.254.0.0/16
+    if (p1 === 192 && p2 === 168) return true; // 192.168.0.0/16
+    if (p1 === 172 && p2 >= 16 && p2 <= 31) return true; // 172.16.0.0/12
+    if (p1 === 100 && p2 >= 64 && p2 <= 127) return true; // CGNAT 100.64.0.0/10
+  }
+
+  return false;
+}
+
 // Local Reflection Generator when Gemini live API is unavailable or rate-limited
 function generateSmartLocalReflection(
   prompt: string,
@@ -103,7 +158,8 @@ function generateSmartLocalReflection(
   mood: string,
   mode: string,
   tags: string[] = [],
-  youtubeAttachment?: any
+  youtubeAttachment?: any,
+  webLinkAttachment?: any
 ): { reply: string; insights: string[]; actionItems: string[] } {
   const cleanPrompt = prompt.trim();
   const titleText = entryTitle || 'Your Reflection';
@@ -138,9 +194,13 @@ function generateSmartLocalReflection(
   const words = cleanPrompt.split(/\s+/).filter(w => w.length > 4);
   const sampleTopics = tags.length > 0 ? tags.join(', ') : (words.slice(0, 3).join(', ') || 'daily priorities');
 
-  const videoContextNote = youtubeAttachment && youtubeAttachment.title
-    ? `\n\n*Attached Video Context*: Attached to reflection on **"${youtubeAttachment.title}"** (${youtubeAttachment.channelTitle || 'YouTube'}).`
-    : '';
+  let contextNotes = '';
+  if (youtubeAttachment && youtubeAttachment.title) {
+    contextNotes += `\n\n*Attached Video Context*: Attached to reflection on **"${youtubeAttachment.title}"** (${youtubeAttachment.channelTitle || 'YouTube'}).`;
+  }
+  if (webLinkAttachment && webLinkAttachment.title) {
+    contextNotes += `\n\n*Attached Web Context*: Attached to article/link **"${webLinkAttachment.title}"** (${webLinkAttachment.domain || 'Web'}).`;
+  }
 
   switch (mode) {
     case 'summarize':
@@ -151,13 +211,16 @@ ${moodEmpathy}
 #### Key Takeaways
 - **Core Focus**: You explored meaningful thoughts around ${sampleTopics}.
 - **Emotional Tone**: Grounded in a "${mood}" mindset with strong self-awareness.
-- **Intent**: Articulated a desire for clarity, alignment, and productive progress.${videoContextNote}
+- **Intent**: Articulated a desire for clarity, alignment, and productive progress.${contextNotes}
 
 *Mindful Observation*: Writing down these thoughts clarifies your cognitive load, transforming abstract ideas into actionable paths.`;
       insights.push(`Strong focus identified around ${sampleTopics}.`);
       insights.push(`Self-awareness logged with a predominant "${mood}" state.`);
       if (youtubeAttachment && youtubeAttachment.title) {
-        insights.push(`Reflected on concepts connected to "${youtubeAttachment.title}".`);
+        insights.push(`Reflected on concepts connected to video "${youtubeAttachment.title}".`);
+      }
+      if (webLinkAttachment && webLinkAttachment.title) {
+        insights.push(`Connected personal thoughts to web resource "${webLinkAttachment.title}".`);
       }
       actionItems.push('Review these key points at the start of your next work session.');
       actionItems.push('Highlight 1 primary priority to complete first.');
@@ -171,7 +234,7 @@ ${moodEmpathy}
 #### 3-Step Momentum Plan
 1. **Immediate Quick Win (Next 2 Hours)**: Complete one small, discrete task related to ${sampleTopics} to generate positive momentum.
 2. **Structural Milestone (Tomorrow)**: Allocate an uninterrupted 30-minute block to organize your main objective without multitasking.
-3. **Weekly Check-in**: Re-read this entry on Friday to acknowledge your progress and calibrate your approach.${videoContextNote}
+3. **Weekly Check-in**: Re-read this entry on Friday to acknowledge your progress and calibrate your approach.${contextNotes}
 
 *Key Principle*: Focus on consistency rather than perfection. Small actions compounded daily create remarkable results.`;
       insights.push('Breaking goals into immediate steps reduces cognitive friction.');
@@ -188,7 +251,7 @@ ${moodEmpathy}
 #### Emotional Grounding & Affirmation
 - **Validation**: Give yourself credit for taking the time to pause and reflect today.
 - **Mindful Pause**: Take three slow, conscious breaths. Inhale for 4 seconds, hold for 4, and exhale gently for 6.
-- **Self-Compassion**: Remember that progress is not linear; listening to your emotional needs is a vital strength.${videoContextNote}
+- **Self-Compassion**: Remember that progress is not linear; listening to your emotional needs is a vital strength.${contextNotes}
 
 *Gentle Inquiry*: What is one restorative activity (a walk, a warm drink, or quiet time) you can gift yourself today?`;
       insights.push('Emotional awareness serves as an early indicator of your wellbeing.');
@@ -205,7 +268,7 @@ ${moodEmpathy}
 #### Alternative Perspectives to Explore
 - **The 80/20 Lens**: Which 20% of your current efforts around ${sampleTopics} will yield 80% of your peace of mind or results?
 - **Inversion Thinking**: What obstacles might arise, and what proactive guardrails can you set up today?
-- **Simplification**: If you could only accomplish one thing from this entry, what would make everything else easier?${videoContextNote}
+- **Simplification**: If you could only accomplish one thing from this entry, what would make everything else easier?${contextNotes}
 
 *Creative Spark*: Look at this challenge as an opportunity to design a lighter, more enjoyable routine.`;
       insights.push('Reframing challenges as experiments opens up creative solutions.');
@@ -223,14 +286,17 @@ ${moodEmpathy}
 #### Mindful Observations
 Reading through your thoughts on **${titleText}**, your engagement with ${sampleTopics} highlights a clear drive to find balance and meaningful direction. 
 
-When navigating moments recorded in a **${mood}** state, acknowledging both the friction and the possibilities allows you to respond with clarity rather than reacting to circumstances.${videoContextNote}
+When navigating moments recorded in a **${mood}** state, acknowledging both the friction and the possibilities allows you to respond with clarity rather than reacting to circumstances.${contextNotes}
 
 #### Introspective Question
 *Looking at what you wrote today, what is the single most meaningful truth you want to carry forward into tomorrow?*`;
       insights.push(`Thoughtful reflection logged regarding ${sampleTopics}.`);
       insights.push(`Your "${mood}" emotional state provides context for your current priorities.`);
       if (youtubeAttachment && youtubeAttachment.title) {
-        insights.push(`Connected personal reflection to "${youtubeAttachment.title}".`);
+        insights.push(`Connected personal reflection to video "${youtubeAttachment.title}".`);
+      }
+      if (webLinkAttachment && webLinkAttachment.title) {
+        insights.push(`Connected personal reflection to article "${webLinkAttachment.title}".`);
       }
       actionItems.push('Reflect briefly on your answer to the introspective question.');
       actionItems.push('Carry one positive insight forward into your daily routine.');
@@ -316,7 +382,8 @@ function extractRelevantJournalEntries(rawQuestion: string, entries: any[]): {
     'japan', 'vacation', 'trip', 'travel', 'study', 'studying', 'algorithm', 'code', 'coding', 'exam',
     'project', 'meeting', 'sleep', 'workout', 'gym', 'book', 'reading', 'movie', 'friend', 'friends',
     'colleague', 'manager', 'money', 'budget', 'routine', 'habit', 'habits', 'distraction', 'phone',
-    'notification', 'youtube', 'video', 'watch', 'watching', 'channel', 'lecture', 'tutorial', 'clip'
+    'notification', 'youtube', 'video', 'watch', 'watching', 'channel', 'lecture', 'tutorial', 'clip',
+    'link', 'links', 'url', 'urls', 'article', 'articles', 'website', 'webpage', 'page', 'site', 'post', 'blog', 'doc', 'docs'
   ];
 
   const containsSpecificTopic = specificTopicIndicators.some(topic => {
@@ -335,11 +402,15 @@ function extractRelevantJournalEntries(rawQuestion: string, entries: any[]): {
     const tags = (Array.isArray(e.tags) ? e.tags : []).join(' ').toLowerCase();
     const ytTitle = (e.youtubeAttachment?.title || '').toLowerCase();
     const ytChannel = (e.youtubeAttachment?.channelTitle || '').toLowerCase();
+    const webTitle = (e.webLinkAttachment?.title || '').toLowerCase();
+    const webDomain = (e.webLinkAttachment?.domain || '').toLowerCase();
+    const webDesc = (e.webLinkAttachment?.description || '').toLowerCase();
 
     const titleWords = title.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
     const tagWords = tags.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
     const contentWords = content.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
     const ytWords = `${ytTitle} ${ytChannel}`.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
+    const webWords = `${webTitle} ${webDomain} ${webDesc}`.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
 
     if (isBroadOverview) {
       // For broad queries, all available entries receive baseline relevance
@@ -359,9 +430,16 @@ function extractRelevantJournalEntries(rawQuestion: string, entries: any[]): {
         if (ytWords.includes(token) || ytTitle.includes(token) || ytChannel.includes(token)) {
           score += 15;
         }
+        if (webWords.includes(token) || webTitle.includes(token) || webDomain.includes(token)) {
+          score += 15;
+        }
       }
       // If query is specifically about youtube/video and entry has youtube attachment
       if ((substantiveTokens.includes('youtub') || substantiveTokens.includes('video') || substantiveTokens.includes('watch') || qLower.includes('youtube') || qLower.includes('video')) && e.youtubeAttachment) {
+        score += 20;
+      }
+      // If query is specifically about web link/article/website and entry has web link attachment
+      if ((substantiveTokens.includes('link') || substantiveTokens.includes('articl') || substantiveTokens.includes('websit') || substantiveTokens.includes('url') || qLower.includes('link') || qLower.includes('article') || qLower.includes('website') || qLower.includes('webpage') || qLower.includes('read')) && e.webLinkAttachment) {
         score += 20;
       }
     }
@@ -384,11 +462,15 @@ function extractRelevantJournalEntries(rawQuestion: string, entries: any[]): {
 // Generates an authentic grounded relevance snippet directly from the entry's actual text
 function generateEntryRelevanceSnippet(entry: any, keywords?: string[]): string {
   const content = (entry.content || '').replace(/\s+/g, ' ').trim();
-  const videoMention = (entry.youtubeAttachment && entry.youtubeAttachment.title)
-    ? ` [Attached Video: "${entry.youtubeAttachment.title}"]`
-    : '';
+  let attachmentMention = '';
+  if (entry.youtubeAttachment && entry.youtubeAttachment.title) {
+    attachmentMention += ` [Attached Video: "${entry.youtubeAttachment.title}"]`;
+  }
+  if (entry.webLinkAttachment && entry.webLinkAttachment.title) {
+    attachmentMention += ` [Attached Web Link: "${entry.webLinkAttachment.title}" (${entry.webLinkAttachment.domain || 'Web'})]`;
+  }
 
-  if (!content) return `Recorded in reflection "${entry.title || 'Untitled Reflection'}".${videoMention}`;
+  if (!content) return `Recorded in reflection "${entry.title || 'Untitled Reflection'}".${attachmentMention}`;
 
   const sentences = content.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
 
@@ -397,7 +479,7 @@ function generateEntryRelevanceSnippet(entry: any, keywords?: string[]): string 
     for (const s of sentences) {
       const sLower = s.toLowerCase();
       if (keywords.some(k => sLower.includes(k))) {
-        return (s.length > 160 ? s.slice(0, 157) + '...' : s) + videoMention;
+        return (s.length > 160 ? s.slice(0, 157) + '...' : s) + attachmentMention;
       }
     }
   }
@@ -405,10 +487,10 @@ function generateEntryRelevanceSnippet(entry: any, keywords?: string[]): string 
   // Otherwise return the first authentic sentence or excerpt
   if (sentences.length > 0) {
     const first = sentences[0];
-    return (first.length > 160 ? first.slice(0, 157) + '...' : first) + videoMention;
+    return (first.length > 160 ? first.slice(0, 157) + '...' : first) + attachmentMention;
   }
 
-  return (content.length > 140 ? content.slice(0, 137) + '...' : content) + videoMention;
+  return (content.length > 140 ? content.slice(0, 137) + '...' : content) + attachmentMention;
 }
 
 // Local Grounded Question Answering Engine over User Journal Entries
@@ -569,6 +651,158 @@ app.post('/api/youtube/metadata', async (req, res) => {
   }
 });
 
+// API: Web Link Metadata & Content Extractor (Safe, SSRF-guarded, rate-bounded)
+app.post('/api/web/metadata', async (req, res) => {
+  try {
+    const data = (req.body && typeof req.body === 'object') ? req.body : {};
+    const rawUrl = typeof data.url === 'string' ? data.url.trim() : '';
+
+    if (!rawUrl) {
+      return res.status(400).json({ error: 'Please provide a valid web URL.' });
+    }
+
+    // Strict protocol check: only allow http:// and https://
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(rawUrl);
+    } catch {
+      return res.status(400).json({
+        error: 'Invalid URL format. Please provide a standard HTTP or HTTPS link (e.g. https://example.com/article).'
+      });
+    }
+
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      return res.status(400).json({
+        error: 'Unsupported protocol. Only http:// and https:// URLs are allowed.'
+      });
+    }
+
+    if (isPrivateOrLocalHost(parsedUrl.hostname)) {
+      return res.status(400).json({
+        error: 'Private, loopback, or cloud-internal addresses cannot be attached as web context.'
+      });
+    }
+
+    const canonicalUrl = parsedUrl.href;
+    const cleanDomain = parsedUrl.hostname.replace(/^www\./, '');
+
+    let title = cleanDomain;
+    let description = '';
+    let imageUrl = '';
+    let extractedSnippet = '';
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4500);
+
+      const webRes = await fetch(canonicalUrl, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; ReflectAI-Journal/1.0; +https://reflectai.internal)',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+      });
+      clearTimeout(timeoutId);
+
+      // Verify redirect target didn't land on private IP
+      if (webRes.url) {
+        try {
+          const finalUrl = new URL(webRes.url);
+          if (isPrivateOrLocalHost(finalUrl.hostname)) {
+            return res.status(400).json({
+              error: 'Redirect to private or internal network resource was blocked.'
+            });
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      if (webRes.ok) {
+        const contentType = webRes.headers.get('content-type') || '';
+        if (contentType.includes('text/html') || contentType.includes('application/xhtml+xml') || !contentType) {
+          // Read up to 500 KB to avoid excessive memory usage
+          const text = await webRes.text();
+          const htmlChunk = text.slice(0, 500000);
+
+          // Extract og:title or title
+          const ogTitleMatch = htmlChunk.match(/<meta\s+[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i) ||
+                               htmlChunk.match(/<meta\s+[^>]*content=["']([^"']+)["'][^>]*property=["']og:title["']/i) ||
+                               htmlChunk.match(/<meta\s+[^>]*name=["']twitter:title["'][^>]*content=["']([^"']+)["']/i);
+          if (ogTitleMatch && ogTitleMatch[1]) {
+            title = decodeHtmlEntities(ogTitleMatch[1].trim());
+          } else {
+            const titleTagMatch = htmlChunk.match(/<title[^>]*>([^<]+)<\/title>/i);
+            if (titleTagMatch && titleTagMatch[1]) {
+              title = decodeHtmlEntities(titleTagMatch[1].trim());
+            }
+          }
+
+          // Extract og:description or description
+          const ogDescMatch = htmlChunk.match(/<meta\s+[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i) ||
+                              htmlChunk.match(/<meta\s+[^>]*content=["']([^"']+)["'][^>]*property=["']og:description["']/i) ||
+                              htmlChunk.match(/<meta\s+[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i) ||
+                              htmlChunk.match(/<meta\s+[^>]*name=["']twitter:description["'][^>]*content=["']([^"']+)["']/i);
+          if (ogDescMatch && ogDescMatch[1]) {
+            description = decodeHtmlEntities(ogDescMatch[1].trim()).slice(0, 300);
+          }
+
+          // Extract og:image
+          const ogImgMatch = htmlChunk.match(/<meta\s+[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i) ||
+                             htmlChunk.match(/<meta\s+[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i) ||
+                             htmlChunk.match(/<meta\s+[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i);
+          if (ogImgMatch && ogImgMatch[1]) {
+            const rawImg = ogImgMatch[1].trim();
+            try {
+              const parsedImg = new URL(rawImg, canonicalUrl);
+              if ((parsedImg.protocol === 'http:' || parsedImg.protocol === 'https:') && !isPrivateOrLocalHost(parsedImg.hostname)) {
+                imageUrl = parsedImg.href;
+              }
+            } catch {
+              // ignore invalid img url
+            }
+          }
+
+          // Extract clean readable text snippet
+          let cleanBody = htmlChunk
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
+            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
+            .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, ' ')
+            .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, ' ')
+            .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, ' ')
+            .replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gi, ' ')
+            .replace(/<!--[\s\S]*?-->/g, ' ')
+            .replace(/<[^>]+>/g, ' ');
+
+          cleanBody = decodeHtmlEntities(cleanBody).replace(/\s+/g, ' ').trim();
+          if (cleanBody.length > 30) {
+            extractedSnippet = cleanBody.slice(0, 500);
+          }
+        }
+      }
+    } catch (fetchErr) {
+      console.warn('[Web Metadata] Fetch notice for domain:', cleanDomain, fetchErr);
+    }
+
+    if (!description) {
+      description = 'Web page context attached to reflection.';
+    }
+
+    return res.json({
+      url: canonicalUrl,
+      title: title || cleanDomain,
+      description,
+      domain: cleanDomain,
+      imageUrl: imageUrl || undefined,
+      extractedSnippet: extractedSnippet || undefined,
+    });
+  } catch (err: any) {
+    console.error('Error in /api/web/metadata:', err);
+    return res.status(500).json({ error: 'Failed to process web link context.' });
+  }
+});
+
 // API: Generate Reflection or Multi-turn Chat Reply
 app.post('/api/gemini/reflect', async (req, res) => {
   try {
@@ -580,6 +814,7 @@ app.post('/api/gemini/reflect', async (req, res) => {
     const mood = typeof data.mood === 'string' ? data.mood : 'thoughtful';
     const history = Array.isArray(data.history) ? data.history : [];
     const youtubeAttachment = (data.youtubeAttachment && typeof data.youtubeAttachment === 'object') ? data.youtubeAttachment : null;
+    const webLinkAttachment = (data.webLinkAttachment && typeof data.webLinkAttachment === 'object') ? data.webLinkAttachment : null;
 
     if (!prompt && history.length === 0) {
       return res.status(400).json({
@@ -607,19 +842,23 @@ app.post('/api/gemini/reflect', async (req, res) => {
         break;
     }
 
-    const videoContextString = youtubeAttachment && youtubeAttachment.title
-      ? `\n- Attached YouTube Video Context:\n  * Title: "${youtubeAttachment.title}"\n  * Channel: "${youtubeAttachment.channelTitle || 'YouTube'}"\n  * URL: ${youtubeAttachment.url}`
-      : '';
+    let contextString = '';
+    if (youtubeAttachment && youtubeAttachment.title) {
+      contextString += `\n- Attached YouTube Video Context:\n  * Title: "${youtubeAttachment.title}"\n  * Channel: "${youtubeAttachment.channelTitle || 'YouTube'}"\n  * URL: ${youtubeAttachment.url}`;
+    }
+    if (webLinkAttachment && webLinkAttachment.title) {
+      contextString += `\n- Attached Web Link Context:\n  * Title: "${webLinkAttachment.title}"\n  * Domain: "${webLinkAttachment.domain || 'Web'}"\n  * URL: ${webLinkAttachment.url}\n  * Description: "${webLinkAttachment.description || ''}"\n  * Page Excerpt: "${(webLinkAttachment.extractedSnippet || '').slice(0, 300)}"`;
+    }
 
     const systemInstruction = `You are ReflectAI, an intelligent, empathetic, and confidential reflection and journaling companion.
 Current Journal Context:
 - Entry Title: "${entryTitle}"
 - User Mood: ${mood}
-- Objective: ${modeInstruction}${videoContextString}
+- Objective: ${modeInstruction}${contextString}
 
 Strict Reflection Directives:
 - The user's journal reflection is the PRIMARY source of truth. Ground insights primarily in the user's authentic thoughts, feelings, and takeaways.
-- Connect the reflection gracefully to the context of the attached video without pretending to know unstated full video details unless mentioned by the user.
+- Connect the reflection gracefully to the context of attached videos or web articles without pretending to know unstated full details unless mentioned by the user.
 - Maintain a warm, supportive, and non-judgmental tone.
 - Use clear Markdown formatting with headers, bullet points, and bold text.
 - Be concise yet insightful.
@@ -660,7 +899,8 @@ Strict Reflection Directives:
         mood,
         mode,
         Array.isArray(data.tags) ? data.tags : [],
-        youtubeAttachment
+        youtubeAttachment,
+        webLinkAttachment
       );
       return res.json({
         reply: localResult.reply,
@@ -1026,6 +1266,13 @@ app.post('/api/gemini/ask-journal', async (req, res) => {
         title: e.youtubeAttachment.title,
         channel: e.youtubeAttachment.channelTitle || 'YouTube',
         timestampNote: e.youtubeAttachment.timestampNote || '',
+      } : undefined,
+      attachedWebLink: e.webLinkAttachment ? {
+        title: e.webLinkAttachment.title,
+        domain: e.webLinkAttachment.domain,
+        url: e.webLinkAttachment.url,
+        description: (e.webLinkAttachment.description || '').slice(0, 150),
+        snippet: (e.webLinkAttachment.extractedSnippet || '').slice(0, 200),
       } : undefined,
     }));
 

@@ -28,6 +28,16 @@ export interface YouTubeAttachment {
   attachedAt?: string;
 }
 
+export interface WebLinkAttachment {
+  url: string;
+  title: string;
+  description?: string;
+  domain: string;
+  imageUrl?: string;
+  extractedSnippet?: string;
+  attachedAt?: string;
+}
+
 export interface JournalEntry {
   id: string;
   userId: string;
@@ -43,6 +53,7 @@ export interface JournalEntry {
   photos?: string[];
   location?: string;
   youtubeAttachment?: YouTubeAttachment | null;
+  webLinkAttachment?: WebLinkAttachment | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -54,6 +65,7 @@ export interface GenerateReflectionRequest {
   mood?: string;
   tags?: string[];
   youtubeAttachment?: YouTubeAttachment | null;
+  webLinkAttachment?: WebLinkAttachment | null;
   history?: Array<{
     role: 'user' | 'assistant';
     content: string;
