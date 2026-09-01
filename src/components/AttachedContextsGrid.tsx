@@ -5,7 +5,6 @@ import {
   Image as ImageIcon, 
   FileText, 
   Music, 
-  Calendar, 
   GitBranch, 
   X, 
   Layers
@@ -20,8 +19,6 @@ interface AttachedContextsGridProps {
   photoAttachment?: PhotoAttachment | null;
   fileAttachment?: FileAttachment | null;
   spotifyAttachment?: SpotifyAttachment | null;
-  // Future extensibility props
-  calendarAttachment?: any;
   githubAttachment?: any;
   onRemoveYoutube: () => void;
   onRemoveWebLink: () => void;
@@ -38,7 +35,6 @@ export const AttachedContextsGrid: React.FC<AttachedContextsGridProps> = ({
   photoAttachment,
   fileAttachment,
   spotifyAttachment,
-  calendarAttachment,
   githubAttachment,
   onRemoveYoutube,
   onRemoveWebLink,
@@ -165,26 +161,6 @@ export const AttachedContextsGrid: React.FC<AttachedContextsGridProps> = ({
       });
     }
 
-    // Extensibility hooks for future types (Calendar, GitHub)
-    if (calendarAttachment) {
-      items.push({
-        id: 'calendar-ctx',
-        type: 'calendar',
-        label: 'Calendar',
-        title: calendarAttachment.title || 'Event',
-        subtitle: calendarAttachment.time || 'Schedule',
-        accent: {
-          iconColor: 'text-blue-400',
-          badgeBg: 'bg-blue-950/40',
-          badgeBorder: 'border-blue-800/40',
-          badgeText: 'text-blue-400',
-          cardBorder: 'border-blue-500/25',
-          cardHover: 'hover:border-blue-500/45 hover:bg-blue-950/15',
-        },
-        onRemove: () => {},
-      });
-    }
-
     if (githubAttachment) {
       items.push({
         id: 'github-ctx',
@@ -211,7 +187,6 @@ export const AttachedContextsGrid: React.FC<AttachedContextsGridProps> = ({
     photoAttachment,
     fileAttachment,
     spotifyAttachment,
-    calendarAttachment,
     githubAttachment,
     onRemoveYoutube,
     onRemoveWebLink,
@@ -238,8 +213,6 @@ export const AttachedContextsGrid: React.FC<AttachedContextsGridProps> = ({
         return <FileText className="w-3.5 h-3.5 text-emerald-400" />;
       case 'spotify':
         return <Music className="w-3.5 h-3.5 text-emerald-400" />;
-      case 'calendar':
-        return <Calendar className="w-3.5 h-3.5 text-blue-400" />;
       case 'github':
         return <GitBranch className="w-3.5 h-3.5 text-purple-400" />;
       default:

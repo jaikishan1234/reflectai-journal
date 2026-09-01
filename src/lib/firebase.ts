@@ -23,11 +23,13 @@ googleProvider.setCustomParameters({
 });
 
 // Initialize Firestore with configured database ID
-export const db = firebaseConfigData.firestoreDatabaseId && firebaseConfigData.firestoreDatabaseId !== '(default)'
-  ? getFirestore(app, firebaseConfigData.firestoreDatabaseId)
+const customDbId = (firebaseConfigData as any).firestoreDatabaseId;
+export const db = customDbId && customDbId !== '(default)'
+  ? getFirestore(app, customDbId)
   : getFirestore(app);
 
 export {
+  GoogleAuthProvider,
   signInWithPopup,
   signInAnonymously,
   firebaseSignOut,

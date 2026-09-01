@@ -7,7 +7,6 @@ import {
   Image as ImageIcon, 
   FileText, 
   Music, 
-  Calendar, 
   GitBranch, 
   Trash2, 
   RefreshCw,
@@ -17,7 +16,7 @@ import {
 import { YouTubeAttachment, WebLinkAttachment, PhotoAttachment, FileAttachment, SpotifyAttachment } from '../types';
 import { getDocumentTypeLabel, formatFileSize } from '../lib/documentParser';
 
-export type ContextType = 'youtube' | 'weblink' | 'photo' | 'file' | 'spotify' | 'calendar' | 'github';
+export type ContextType = 'youtube' | 'weblink' | 'photo' | 'file' | 'spotify' | 'github';
 
 export interface GenericContextItem {
   id: string;
@@ -182,8 +181,6 @@ export const ContextDetailModal: React.FC<ContextDetailModalProps> = ({
         return <FileText className="w-4 h-4 text-emerald-400" />;
       case 'spotify':
         return <Music className="w-4 h-4 text-emerald-400" />;
-      case 'calendar':
-        return <Calendar className="w-4 h-4 text-blue-400" />;
       case 'github':
         return <GitBranch className="w-4 h-4 text-purple-400" />;
       default:
@@ -547,7 +544,7 @@ export const ContextDetailModal: React.FC<ContextDetailModalProps> = ({
             </div>
           )}
 
-          {/* Generic / Future Types (Calendar, GitHub) */}
+          {/* Generic / Future Types (GitHub, etc.) */}
           {!['youtube', 'weblink', 'photo', 'file', 'spotify'].includes(context.type) && (
             <div className="space-y-4">
               <div>

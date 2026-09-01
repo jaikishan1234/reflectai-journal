@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { JournalEntry, ReflectionMode, YouTubeAttachment, WebLinkAttachment, PhotoAttachment, FileAttachment, SpotifyAttachment } from '../types';
-import { Sparkles, Save, Tag, Smile, Lightbulb, RotateCw, AlertCircle, Video, Plus, X, ExternalLink, Clock, Link as LinkIcon, Globe, Image as ImageIcon, FileText, Music } from 'lucide-react';
+import { Sparkles, Save, Tag, Smile, Lightbulb, RotateCw, AlertCircle, Video, Plus, X, ExternalLink, Clock, Link as LinkIcon, Globe, Image as ImageIcon, FileText, Music, Check, Layers } from 'lucide-react';
 import { AttachedContextsGrid } from './AttachedContextsGrid';
 import { isSupportedDocument, extractDocumentText, formatFileSize, readFileAsDataUrl } from '../lib/documentParser';
 
