@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { UserProfile, JournalEntry, ReflectionMode, ChatMessage } from './types';
+import { UserProfile, JournalEntry, ReflectionMode, ChatMessage, ActiveViewType } from './types';
 import { StorageService } from './services/storage';
 import { Navbar } from './components/Navbar';
 import { LandingHero } from './components/LandingHero';
@@ -13,10 +13,12 @@ import { SecurityGuideModal } from './components/SecurityGuideModal';
 import { PersonalInsightsView } from './components/PersonalInsightsView';
 import { AskJournalView } from './components/AskJournalView';
 import { YourStoryView } from './components/YourStoryView';
+import { WellbeingView } from './components/WellbeingView';
+import { WrappedView } from './components/WrappedView';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => StorageService.getCurrentUser());
-  const [activeView, setActiveView] = useState<'journal' | 'insights' | 'ask_journal' | 'story'>('journal');
+  const [activeView, setActiveView] = useState<ActiveViewType>('journal');
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [activeEntry, setActiveEntry] = useState<JournalEntry | null>(null);
   
@@ -115,6 +117,24 @@ export default function App() {
       updatedAt: new Date().toISOString(),
     };
     setActiveEntry(newEntry);
+  };
+
+  const handleStartDailyPrompt = (promptText: string, title?: string) => {
+    if (!currentUser) return;
+    const newEntry: JournalEntry = {
+      id: 'entry_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      userId: currentUser.uid,
+      title: title || 'Daily Wellbeing Reflection',
+      content: `> **Reflection Prompt:** ${promptText}\n\n`,
+      mood: 'thoughtful',
+      tags: ['#wellbeing', '#dailyreflection'],
+      mode: 'wellness',
+      messages: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setActiveEntry(newEntry);
+    setActiveView('journal');
   };
 
   const handleSaveEntry = async (entryToSave: JournalEntry) => {
@@ -327,6 +347,26 @@ export default function App() {
                 handleCreateNewEntry();
                 setActiveView('journal');
               }}
+            />
+          </div>
+        ) : activeView === 'wellbeing' ? (
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 flex flex-col">
+            <WellbeingView
+              entries={entries}
+              user={currentUser}
+              onNewEntry={() => {
+                handleCreateNewEntry();
+                setActiveView('journal');
+              }}
+              onStartDailyPrompt={handleStartDailyPrompt}
+            />
+          </div>
+        ) : activeView === 'wrapped' ? (
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 flex flex-col">
+            <WrappedView
+              entries={entries}
+              user={currentUser}
+              onBackToJournal={() => setActiveView('journal')}
             />
           </div>
         ) : (

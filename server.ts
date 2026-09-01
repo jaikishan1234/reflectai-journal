@@ -1510,6 +1510,586 @@ Response JSON Schema:
 
 
 
+// Smart Local Wellbeing & Burnout Signals Generator (Non-diagnostic, pattern-based)
+function generateSmartLocalWellbeing(sortedEntries: any[]): any {
+  const totalCount = sortedEntries.length;
+  if (totalCount < 2) {
+    return {
+      overallStatus: 'stable',
+      statusExplanation: 'More journal reflections across different dates are needed to observe meaningful wellbeing trends.',
+      signals: [],
+      trendComparison: {
+        earlierPeriod: {
+          dateRange: 'Earlier Reflections',
+          signalIntensity: 'Baseline',
+          summary: 'Initial reflection recordings.',
+        },
+        recentPeriod: {
+          dateRange: 'Recent Reflections',
+          signalIntensity: 'Baseline',
+          summary: 'Recent reflection recordings.',
+        },
+        trajectory: 'stable',
+        trajectoryExplanation: 'Maintain your journaling routine to reveal emerging wellbeing patterns over time.',
+      },
+      aiReflection: {
+        observations: ['Journal history is currently building.'],
+        patternsNoticed: ['Begin journaling regularly to track your focus, energy, and recovery over time.'],
+        gentleSuggestions: ['Write a short 2-minute check-in whenever you feel a shift in your workload or energy.'],
+        encouragement: 'Every reflection you write builds greater self-awareness and intentionality.',
+      },
+      actionableSuggestions: [
+        {
+          id: 'sug_1',
+          title: 'Establish a Reflection Rhythm',
+          suggestion: 'Take 3 minutes at the end of your day to note what gave you energy and what drained it.',
+          category: 'routine',
+        },
+        {
+          id: 'sug_2',
+          title: 'Protect Intentional Rest',
+          suggestion: 'Schedule a brief restorative pause after high-focus tasks.',
+          category: 'rest',
+        },
+      ],
+      dailyPrompt: {
+        id: 'prompt_1',
+        question: 'What is taking most of your mental energy today, and what would make it feel more manageable?',
+        context: 'A gentle prompt to reflect on current cognitive load and opportunities for ease.',
+      },
+      hasSufficientContext: false,
+      analyzedEntryCount: totalCount,
+      timestamp: new Date().toISOString(),
+      modelUsed: 'resilient-offline-engine',
+    };
+  }
+
+  const midPoint = Math.floor(totalCount / 2);
+  const earlierSlice = sortedEntries.slice(0, midPoint);
+  const recentSlice = sortedEntries.slice(midPoint);
+
+  const earlierDateRange = `${earlierSlice[0]?.createdAt ? new Date(earlierSlice[0].createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Earlier'} - ${earlierSlice[earlierSlice.length - 1]?.createdAt ? new Date(earlierSlice[earlierSlice.length - 1].createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Mid'}`;
+  const recentDateRange = `${recentSlice[0]?.createdAt ? new Date(recentSlice[0].createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Mid'} - ${recentSlice[recentSlice.length - 1]?.createdAt ? new Date(recentSlice[recentSlice.length - 1].createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recent'}`;
+
+  // Helper to extract quotes matching terms
+  const findQuotes = (entriesList: any[], regex: RegExp): Array<{ entryId: string; entryTitle: string; date: string; excerpt: string }> => {
+    const quotes: Array<{ entryId: string; entryTitle: string; date: string; excerpt: string }> = [];
+    for (const e of entriesList) {
+      const text = `${e.title || ''} ${e.content || ''}`;
+      if (regex.test(text)) {
+        const sentences = (e.content || '').split(/(?<=[.!?])\s+/);
+        const matchSentence = sentences.find((s: string) => regex.test(s)) || (e.content || '').slice(0, 140);
+        quotes.push({
+          entryId: e.id,
+          entryTitle: e.title || 'Reflection',
+          date: e.createdAt ? new Date(e.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recent',
+          excerpt: matchSentence.trim().slice(0, 160),
+        });
+        if (quotes.length >= 2) break;
+      }
+    }
+    return quotes;
+  };
+
+  // Signal Definitions
+  const signalConfigs: Array<{
+    type: 'stress' | 'workload' | 'exhaustion' | 'motivation' | 'focus' | 'routine' | 'recovery' | 'overwhelm';
+    label: string;
+    regex: RegExp;
+    descPattern: string;
+  }> = [
+    {
+      type: 'workload',
+      label: 'Workload & Deadline Pressure',
+      regex: /workload|deadline|deliverable|backlog|tasks|meeting|busy|crunch|schedule|deliver|sprint/i,
+      descPattern: 'references to project deadlines and competing priorities',
+    },
+    {
+      type: 'exhaustion',
+      label: 'Energy & Rest Levels',
+      regex: /tired|exhaust|drain|fatigue|sleep|deplet|weary|burnout|nap|drowsy|stamina/i,
+      descPattern: 'notations of physical or cognitive stamina changes',
+    },
+    {
+      type: 'stress',
+      label: 'Tension & Pressure Responses',
+      regex: /stress|tense|pressur|anxious|worry|tight|uneasy|frustrat/i,
+      descPattern: 'observations of elevated tension during challenging milestones',
+    },
+    {
+      type: 'focus',
+      label: 'Focus & Concentration Shifts',
+      regex: /distract|scatter|focus|concentrat|interrupt|context switch|deep work|flow state|mind wander/i,
+      descPattern: 'patterns in sustaining deep focus and navigating interruptions',
+    },
+    {
+      type: 'overwhelm',
+      label: 'Pacing & Volume Signals',
+      regex: /overwhelm|too much|swamped|drown|spinning|juggling|head spinning/i,
+      descPattern: 'periods of elevated cognitive volume and task density',
+    },
+    {
+      type: 'routine',
+      label: 'Routine & Habit Consistency',
+      regex: /routine|habit|consistent|morning|evening|structure|ritual|cadence/i,
+      descPattern: 'consistency in personal rhythm and daily structures',
+    },
+    {
+      type: 'recovery',
+      label: 'Restorative Downtime & Recovery',
+      regex: /rest|break|recover|walk|unwind|relax|nature|pause|breath|weekend|recharge|stretch/i,
+      descPattern: 'intentional practices for mental reset and decompression',
+    },
+  ];
+
+  const detectedSignals: any[] = [];
+  let negativeRecentCount = 0;
+  let positiveRecentCount = 0;
+  let negativeEarlierCount = 0;
+
+  for (const cfg of signalConfigs) {
+    const earlierQuotes = findQuotes(earlierSlice, cfg.regex);
+    const recentQuotes = findQuotes(recentSlice, cfg.regex);
+    const totalQuotes = [...recentQuotes, ...earlierQuotes];
+
+    if (totalQuotes.length > 0) {
+      let trend: 'improving' | 'stable' | 'increasing' = 'stable';
+      if (recentQuotes.length > earlierQuotes.length) {
+        trend = (cfg.type === 'recovery' || cfg.type === 'routine' || cfg.type === 'motivation') ? 'improving' : 'increasing';
+      } else if (recentQuotes.length < earlierQuotes.length) {
+        trend = (cfg.type === 'recovery' || cfg.type === 'routine' || cfg.type === 'motivation') ? 'increasing' : 'improving';
+      }
+
+      if (cfg.type === 'stress' || cfg.type === 'exhaustion' || cfg.type === 'overwhelm' || cfg.type === 'workload') {
+        negativeRecentCount += recentQuotes.length;
+        negativeEarlierCount += earlierQuotes.length;
+      } else {
+        positiveRecentCount += recentQuotes.length;
+      }
+
+      detectedSignals.push({
+        type: cfg.type,
+        label: cfg.label,
+        trend,
+        evidenceCount: totalQuotes.length,
+        description: `Your reflections contain ${totalQuotes.length} ${cfg.descPattern}.`,
+        quotes: totalQuotes.slice(0, 2),
+      });
+    }
+  }
+
+  // Ensure at least 2 default signal cards for comprehensive display if specific keywords were sparse
+  if (detectedSignals.length < 2) {
+    detectedSignals.push({
+      type: 'focus',
+      label: 'Focus & Mental Clarity',
+      trend: 'stable',
+      evidenceCount: 1,
+      description: 'Your journal logs reflect steady self-inquiry on your daily goals.',
+      quotes: findQuotes(sortedEntries, /./i).slice(0, 1),
+    });
+    detectedSignals.push({
+      type: 'recovery',
+      label: 'Rest & Sustainable Pacing',
+      trend: 'improving',
+      evidenceCount: 1,
+      description: 'You actively dedicate time to reflective journaling as a grounding practice.',
+      quotes: findQuotes(sortedEntries, /./i).slice(0, 1),
+    });
+  }
+
+  // Determine overall status & trajectory in non-diagnostic language
+  let overallStatus: 'improving' | 'stable' | 'needs_attention' = 'stable';
+  let trajectory: 'improving' | 'stable' | 'increasing' = 'stable';
+  let statusExplanation = '';
+  let trajectoryExplanation = '';
+
+  if (negativeRecentCount > negativeEarlierCount + 1) {
+    overallStatus = 'needs_attention';
+    trajectory = 'increasing';
+    statusExplanation = 'Your recent entries reflect an increase in workload demands and cognitive fatigue compared to earlier reflections.';
+    trajectoryExplanation = 'Wellbeing signals related to task pressure and exhaustion appear more frequently in your latest entries.';
+  } else if (negativeRecentCount < negativeEarlierCount || positiveRecentCount >= 2) {
+    overallStatus = 'improving';
+    trajectory = 'improving';
+    statusExplanation = 'Your recent reflections show a positive trend toward balanced pacing and intentional recovery breaks.';
+    trajectoryExplanation = 'References to intense workload strain have stabilized or eased compared to earlier journal entries.';
+  } else {
+    overallStatus = 'stable';
+    trajectory = 'stable';
+    statusExplanation = 'Your wellbeing signals and reflection patterns have remained steady across your recent journal entries.';
+    trajectoryExplanation = 'Consistent emotional tone and steady focus management recorded across both periods.';
+  }
+
+  // Select dynamic daily prompt
+  const dailyPrompts = [
+    {
+      id: 'prompt_energy',
+      question: 'What is taking most of your mental energy today, and what would make tomorrow feel more manageable?',
+      context: 'Examine cognitive load and identify one micro-adjustment for greater ease.',
+    },
+    {
+      id: 'prompt_focus',
+      question: 'What conditions helped you feel most focused and calm during your recent productive hours?',
+      context: 'Identify protective routines that foster flow and clarity.',
+    },
+    {
+      id: 'prompt_rest',
+      question: 'What is one small boundary or recovery break you can protect for yourself today?',
+      context: 'Mindful reflection on rest as a catalyst for sustainable creativity.',
+    },
+    {
+      id: 'prompt_pressure',
+      question: 'When workload pressure felt highest this week, what helped you regain your center?',
+      context: 'Learn from your own resilience and past supportive behaviors.',
+    },
+  ];
+  const chosenPrompt = dailyPrompts[totalCount % dailyPrompts.length];
+
+  return {
+    overallStatus,
+    statusExplanation,
+    signals: detectedSignals.slice(0, 4),
+    trendComparison: {
+      earlierPeriod: {
+        dateRange: earlierDateRange,
+        signalIntensity: negativeEarlierCount > 2 ? 'Elevated Pressure' : 'Moderate Flow',
+        summary: `Analyzed ${earlierSlice.length} earlier entries capturing initial commitments and routines.`,
+      },
+      recentPeriod: {
+        dateRange: recentDateRange,
+        signalIntensity: negativeRecentCount > 2 ? 'High Demand' : (overallStatus === 'improving' ? 'Restorative Pace' : 'Steady Balance'),
+        summary: `Analyzed ${recentSlice.length} recent entries highlighting current workload and recovery patterns.`,
+      },
+      trajectory,
+      trajectoryExplanation,
+    },
+    aiReflection: {
+      observations: [
+        `Analyzed ${totalCount} private reflections for recurring wellbeing patterns.`,
+        overallStatus === 'needs_attention'
+          ? 'Recent entries mention higher density of deadlines and fewer mentions of recovery.'
+          : 'Reflections demonstrate steady emotional resilience and consistent mindfulness.',
+        'Journaling cadence provides an anchor for self-observation.',
+      ],
+      patternsNoticed: [
+        `Observations indicate ${detectedSignals.map(s => s.label.toLowerCase()).join(', ')} as key themes.`,
+        'Energy levels closely correlate with the structure and pacing of your workday.',
+      ],
+      gentleSuggestions: [
+        'Consider scheduling brief 5-minute pauses between deep work blocks.',
+        'Protect 15 minutes of uninterrupted wind-down time before your evening routine.',
+        'Reflect on what gave you the greatest sense of calm during your best recent days.',
+      ],
+      encouragement: 'Your reflections demonstrate deep self-awareness. Taking small, intentional steps to pace yourself supports both your wellbeing and your long-term focus.',
+    },
+    actionableSuggestions: [
+      {
+        id: 'sug_focus',
+        title: 'Protect Uninterrupted Focus Blocks',
+        suggestion: 'Cluster quick administrative tasks into designated windows so deep work remains unfragmented.',
+        category: 'focus',
+      },
+      {
+        id: 'sug_rest',
+        title: 'Take a Short Recovery Break',
+        suggestion: 'Step away from screens for 5 minutes after extended focused tasks to reset mental stamina.',
+        category: 'rest',
+      },
+      {
+        id: 'sug_routine',
+        title: 'Maintain a Consistent Journaling Routine',
+        suggestion: 'Log a quick 2-minute check-in on high-pressure days to offload cognitive clutter.',
+        category: 'routine',
+      },
+      {
+        id: 'sug_reflection',
+        title: 'Review What Worked on Productive Days',
+        suggestion: 'Look back at your earlier peaceful entries to recall habits that supported your focus.',
+        category: 'reflection',
+      },
+    ],
+    dailyPrompt: chosenPrompt,
+    hasSufficientContext: true,
+    analyzedEntryCount: totalCount,
+    timestamp: new Date().toISOString(),
+    modelUsed: 'resilient-offline-engine',
+  };
+}
+
+// API: Generate Wellbeing & Burnout Signals Analysis (Non-diagnostic, privacy-first)
+app.post('/api/gemini/wellbeing', async (req, res) => {
+  try {
+    const data = (req.body && typeof req.body === 'object') ? req.body : {};
+    const entries = Array.isArray(data.entries) ? data.entries : [];
+    const userId = typeof data.userId === 'string' ? data.userId : 'anonymous';
+
+    if (entries.length < 2) {
+      return res.status(400).json({
+        error: 'At least 2 journal entries are required to observe meaningful wellbeing patterns and trends over time.',
+        insufficientData: true,
+      });
+    }
+
+    // Sort chronologically
+    const sortedEntries = [...entries].sort(
+      (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+    );
+
+    const totalCount = sortedEntries.length;
+    const compactEntries = sortedEntries.map((e, idx) => ({
+      id: e.id,
+      index: idx + 1,
+      date: e.createdAt ? new Date(e.createdAt).toISOString().split('T')[0] : 'Unknown Date',
+      title: (e.title || 'Untitled').slice(0, 70),
+      mood: e.mood || 'thoughtful',
+      tags: Array.isArray(e.tags) ? e.tags.slice(0, 5) : [],
+      contentSnippet: (e.content || '').slice(0, 300).replace(/\s+/g, ' ').trim(),
+    }));
+
+    const systemInstruction = `You are ReflectAI's Wellbeing & Burnout Signals Assistant.
+Your objective is to analyze the user's authentic private journal entries to describe observable patterns, recurring themes, and trajectory regarding wellbeing, workload pressure, focus, and recovery over time.
+
+CRITICAL PRODUCT & SAFETY PRINCIPLES:
+1. NON-DIAGNOSTIC MANDATE: You MUST NOT diagnose the user with medical or psychological conditions.
+   - NEVER say "You have burnout", "You are clinically depressed", "You have generalized anxiety disorder", etc.
+   - NEVER use clinical psychiatric labels.
+   - ALWAYS describe observable patterns from the user's writings using words like "signals", "patterns", "trends", "reflections", "observations", "notations".
+   - Examples of approved language:
+     * "You've mentioned feeling overwhelmed more frequently in recent entries."
+     * "Your recent reflections suggest that uninterrupted focus has been harder to maintain."
+     * "Your entries contain more references to workload pressure and deadline compression."
+2. ZERO-HALLUCINATION EVIDENCE:
+   - Only report signals directly corroborated by the provided journal entries.
+   - For every signal, supply authentic quotes and reference the exact entry IDs.
+3. GROUNDED COMPARISON:
+   - Compare earlier journal entries vs recent journal entries.
+   - Determine whether signals related to workload pressure and fatigue appear to be "improving", "stable", or "increasing".
+4. OUTPUT FORMAT:
+   - Return ONLY a single valid JSON object strictly matching the specified JSON schema.`;
+
+    const prompt = `Analyze these ${compactEntries.length} chronological journal entries for user ID "${userId}" to identify wellbeing and burnout signals:
+
+[JOURNAL ENTRIES DATA]
+${JSON.stringify(compactEntries, null, 2)}
+[/JOURNAL ENTRIES DATA]
+
+Generate a structured JSON response matching this EXACT schema:
+{
+  "overallStatus": "improving" | "stable" | "needs_attention",
+  "statusExplanation": "A concise, non-diagnostic 1-2 sentence summary of recent wellbeing journal patterns.",
+  "signals": [
+    {
+      "type": "stress" | "workload" | "exhaustion" | "motivation" | "focus" | "routine" | "recovery" | "overwhelm",
+      "label": "Human readable title (e.g. Workload Pressure, Rest & Recovery Levels)",
+      "trend": "improving" | "stable" | "increasing",
+      "evidenceCount": number,
+      "description": "Factual description of the recurring pattern from their entries.",
+      "quotes": [
+        {
+          "entryId": "exact entry id from dataset",
+          "entryTitle": "exact entry title",
+          "date": "YYYY-MM-DD or readable date",
+          "excerpt": "relevant quote or snippet from that entry"
+        }
+      ]
+    }
+  ],
+  "trendComparison": {
+    "earlierPeriod": {
+      "dateRange": "e.g. Oct 1 - Oct 15",
+      "signalIntensity": "e.g. Moderate Pressure or Baseline",
+      "summary": "Brief summary of earlier entries"
+    },
+    "recentPeriod": {
+      "dateRange": "e.g. Oct 16 - Oct 30",
+      "signalIntensity": "e.g. Elevated Workload or Restorative Pace",
+      "summary": "Brief summary of recent entries"
+    },
+    "trajectory": "improving" | "stable" | "increasing",
+    "trajectoryExplanation": "Clear explanation comparing earlier vs recent patterns."
+  },
+  "aiReflection": {
+    "observations": [
+      "Key non-diagnostic observation 1 supported by entries",
+      "Key non-diagnostic observation 2 supported by entries"
+    ],
+    "patternsNoticed": [
+      "Pattern 1 noticed in pacing/workload",
+      "Pattern 2 noticed in focus/energy"
+    ],
+    "gentleSuggestions": [
+      "Gentle reflective suggestion 1",
+      "Gentle reflective suggestion 2"
+    ],
+    "encouragement": "A warm, encouraging sentence reminding the user of their agency and self-awareness."
+  },
+  "actionableSuggestions": [
+    {
+      "id": "sug_1",
+      "title": "Clear suggestion title",
+      "suggestion": "Practical non-medical suggestion (e.g., take a short recovery break, protect focus time, review past successful days)",
+      "category": "rest" | "focus" | "routine" | "reflection"
+    }
+  ],
+  "dailyPrompt": {
+    "id": "prompt_1",
+    "question": "A thoughtful daily reflection question (e.g., 'What is taking most of your mental energy today?')",
+    "context": "Brief context explaining why this reflection is timely."
+  }
+}`;
+
+    const result = await generateContentWithFallback(prompt, systemInstruction);
+
+    let parsed: any = null;
+    if (result.text && result.text.trim().length > 0) {
+      try {
+        let cleaned = result.text.trim();
+        if (cleaned.startsWith('```json')) {
+          cleaned = cleaned.replace(/^```json\s*/, '').replace(/```\s*$/, '');
+        } else if (cleaned.startsWith('```')) {
+          cleaned = cleaned.replace(/^```\s*/, '').replace(/```\s*$/, '');
+        }
+        const s = cleaned.indexOf('{');
+        const e = cleaned.lastIndexOf('}');
+        if (s >= 0 && e > s) {
+          parsed = JSON.parse(cleaned.substring(s, e + 1));
+        }
+      } catch (parseErr) {
+        console.warn('[Gemini Wellbeing] JSON parse failed, utilizing grounded engine:', parseErr);
+      }
+    }
+
+    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.signals)) {
+      // Validate and sanitize diagnostic terms if any slipped in
+      const forbiddenDiagnosticTerms = [
+        { find: /you have burnout/gi, replace: "you have mentioned feeling exhausted" },
+        { find: /you have depression/gi, replace: "you have noted low energy" },
+        { find: /you have anxiety/gi, replace: "you have noted feelings of worry" },
+        { find: /diagnos(ed|is|ing)/gi, replace: "observed in your journal" },
+        { find: /clinical(ly)?/gi, replace: "consistently" },
+      ];
+
+      const sanitizeText = (txt: string): string => {
+        let clean = txt;
+        for (const rule of forbiddenDiagnosticTerms) {
+          clean = clean.replace(rule.find, rule.replace);
+        }
+        return clean;
+      };
+
+      const sanitizedStatus = (['improving', 'stable', 'needs_attention'].includes(parsed.overallStatus))
+        ? parsed.overallStatus
+        : 'stable';
+
+      const sanitizedTrajectory = (['improving', 'stable', 'increasing'].includes(parsed.trendComparison?.trajectory))
+        ? parsed.trendComparison.trajectory
+        : 'stable';
+
+      const entryMap = new Map(sortedEntries.map(e => [e.id, e]));
+
+      const validatedSignals = parsed.signals.map((sig: any) => {
+        const validatedQuotes: any[] = [];
+        if (Array.isArray(sig.quotes)) {
+          for (const q of sig.quotes) {
+            const matched = entryMap.get(q.entryId) || sortedEntries.find(e => e.id === q.entryId || e.title === q.entryTitle);
+            if (matched) {
+              validatedQuotes.push({
+                entryId: matched.id,
+                entryTitle: matched.title || 'Reflection',
+                date: matched.createdAt ? new Date(matched.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recent',
+                excerpt: sanitizeText(typeof q.excerpt === 'string' ? q.excerpt : matched.content.slice(0, 140)),
+              });
+            }
+          }
+        }
+        return {
+          type: sig.type || 'workload',
+          label: sanitizeText(sig.label || 'Observed Pattern'),
+          trend: ['improving', 'stable', 'increasing'].includes(sig.trend) ? sig.trend : 'stable',
+          evidenceCount: validatedQuotes.length > 0 ? validatedQuotes.length : (sig.evidenceCount || 1),
+          description: sanitizeText(sig.description || 'Observed in your journal entries.'),
+          quotes: validatedQuotes,
+        };
+      });
+
+      const responsePayload = {
+        overallStatus: sanitizedStatus,
+        statusExplanation: sanitizeText(parsed.statusExplanation || 'Summary of recent wellbeing journal patterns.'),
+        signals: validatedSignals,
+        trendComparison: {
+          earlierPeriod: {
+            dateRange: parsed.trendComparison?.earlierPeriod?.dateRange || 'Earlier Entries',
+            signalIntensity: parsed.trendComparison?.earlierPeriod?.signalIntensity || 'Baseline',
+            summary: sanitizeText(parsed.trendComparison?.earlierPeriod?.summary || 'Earlier journal entries analyzed.'),
+          },
+          recentPeriod: {
+            dateRange: parsed.trendComparison?.recentPeriod?.dateRange || 'Recent Entries',
+            signalIntensity: parsed.trendComparison?.recentPeriod?.signalIntensity || 'Current',
+            summary: sanitizeText(parsed.trendComparison?.recentPeriod?.summary || 'Recent journal entries analyzed.'),
+          },
+          trajectory: sanitizedTrajectory,
+          trajectoryExplanation: sanitizeText(parsed.trendComparison?.trajectoryExplanation || 'Comparison across your journal history.'),
+        },
+        aiReflection: {
+          observations: Array.isArray(parsed.aiReflection?.observations)
+            ? parsed.aiReflection.observations.map(sanitizeText)
+            : ['Pattern analysis grounded directly in your reflections.'],
+          patternsNoticed: Array.isArray(parsed.aiReflection?.patternsNoticed)
+            ? parsed.aiReflection.patternsNoticed.map(sanitizeText)
+            : ['Observable shifts in workload and focus across entries.'],
+          gentleSuggestions: Array.isArray(parsed.aiReflection?.gentleSuggestions)
+            ? parsed.aiReflection.gentleSuggestions.map(sanitizeText)
+            : ['Take short restorative pauses during deep work blocks.'],
+          encouragement: sanitizeText(parsed.aiReflection?.encouragement || 'Your reflections reflect mindful commitment to sustainable personal growth.'),
+        },
+        actionableSuggestions: Array.isArray(parsed.actionableSuggestions)
+          ? parsed.actionableSuggestions.map((sug: any, i: number) => ({
+              id: sug.id || `sug_${i + 1}`,
+              title: sanitizeText(sug.title || 'Practical Step'),
+              suggestion: sanitizeText(sug.suggestion || 'Mindful next step.'),
+              category: sug.category || 'focus',
+            }))
+          : [
+              {
+                id: 'sug_1',
+                title: 'Take a Short Recovery Break',
+                suggestion: 'Step away from your workspace for 5 minutes between deep focus sessions.',
+                category: 'rest',
+              },
+            ],
+        dailyPrompt: parsed.dailyPrompt && parsed.dailyPrompt.question
+          ? {
+              id: parsed.dailyPrompt.id || 'prompt_daily',
+              question: sanitizeText(parsed.dailyPrompt.question),
+              context: sanitizeText(parsed.dailyPrompt.context || 'Daily reflection inquiry.'),
+            }
+          : {
+              id: 'prompt_daily',
+              question: 'What is taking most of your mental energy today, and what would make tomorrow feel more manageable?',
+              context: 'A gentle prompt to reflect on your current priorities and energy.',
+            },
+        hasSufficientContext: true,
+        analyzedEntryCount: totalCount,
+        timestamp: new Date().toISOString(),
+        modelUsed: result.modelUsed,
+      };
+
+      return res.json(responsePayload);
+    }
+
+    // Fallback if parsing was empty or model failed
+    const local = generateSmartLocalWellbeing(sortedEntries);
+    return res.json(local);
+  } catch (error: any) {
+    console.error('Error in /api/gemini/wellbeing:', error);
+    const safeEntries = Array.isArray(req.body?.entries) ? req.body.entries : [];
+    const local = generateSmartLocalWellbeing(safeEntries);
+    return res.json(local);
+  }
+});
+
+
 // Vite & Static Asset Handling
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {

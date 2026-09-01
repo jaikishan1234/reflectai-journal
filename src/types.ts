@@ -1,3 +1,5 @@
+export type ActiveViewType = 'journal' | 'insights' | 'ask_journal' | 'story' | 'wellbeing' | 'wrapped';
+
 export interface UserProfile {
   uid: string;
   displayName: string;
@@ -129,5 +131,67 @@ export interface YourStoryResponse {
   timestamp: string;
   modelUsed: string;
 }
+
+export interface WellbeingSignalQuote {
+  entryId: string;
+  entryTitle: string;
+  date: string;
+  excerpt: string;
+}
+
+export interface WellbeingSignal {
+  type: 'stress' | 'workload' | 'exhaustion' | 'motivation' | 'focus' | 'routine' | 'recovery' | 'overwhelm';
+  label: string;
+  trend: 'improving' | 'stable' | 'increasing';
+  evidenceCount: number;
+  description: string;
+  quotes: WellbeingSignalQuote[];
+}
+
+export interface WellbeingActionSuggestion {
+  id: string;
+  title: string;
+  suggestion: string;
+  category: 'rest' | 'focus' | 'routine' | 'reflection';
+}
+
+export interface WellbeingDailyPrompt {
+  id: string;
+  question: string;
+  context: string;
+}
+
+export interface WellbeingAnalysisResponse {
+  overallStatus: 'improving' | 'stable' | 'needs_attention';
+  statusExplanation: string;
+  signals: WellbeingSignal[];
+  trendComparison: {
+    earlierPeriod: {
+      dateRange: string;
+      signalIntensity: string;
+      summary: string;
+    };
+    recentPeriod: {
+      dateRange: string;
+      signalIntensity: string;
+      summary: string;
+    };
+    trajectory: 'improving' | 'stable' | 'increasing';
+    trajectoryExplanation: string;
+  };
+  aiReflection: {
+    observations: string[];
+    patternsNoticed: string[];
+    gentleSuggestions: string[];
+    encouragement: string;
+  };
+  actionableSuggestions: WellbeingActionSuggestion[];
+  dailyPrompt: WellbeingDailyPrompt;
+  hasSufficientContext: boolean;
+  analyzedEntryCount: number;
+  timestamp: string;
+  modelUsed: string;
+}
+
 
 
