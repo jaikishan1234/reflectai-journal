@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Markdown from 'react-markdown';
-import { Sparkles, CheckSquare, Square, Lightbulb, Copy, Check, ShieldCheck, CornerDownRight, Video, ExternalLink, Globe, Link as LinkIcon } from 'lucide-react';
+import { Sparkles, CheckSquare, Square, Lightbulb, Copy, Check, ShieldCheck, CornerDownRight, Video, ExternalLink, Globe, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
 import { JournalEntry } from '../types';
 
 interface ReflectionCardProps {
@@ -161,6 +161,32 @@ export const ReflectionCard: React.FC<ReflectionCardProps> = ({ entry, onAskFoll
             <ExternalLink className="w-3 h-3" />
             <span>Open</span>
           </a>
+        </div>
+      )}
+
+      {/* Attached Photo Context Preview if present */}
+      {entry.photoAttachment && (
+        <div className="mb-4 p-3 bg-stone-950/70 border border-amber-500/20 rounded-xl flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <img
+              src={entry.photoAttachment.url}
+              alt={entry.photoAttachment.caption || 'Connected Journal Photo'}
+              referrerPolicy="no-referrer"
+              className="w-14 h-14 rounded-lg object-cover bg-stone-900 border border-stone-800 shrink-0"
+            />
+            <div className="min-w-0">
+              <div className="text-[10px] font-semibold text-amber-400 flex items-center gap-1 uppercase tracking-wider">
+                <ImageIcon className="w-3 h-3" />
+                <span>Connected Photo Context</span>
+              </div>
+              <h4 className="text-xs font-semibold text-stone-200 truncate mt-0.5" title={entry.photoAttachment.caption || 'Attached moment'}>
+                {entry.photoAttachment.caption ? `"${entry.photoAttachment.caption}"` : (entry.photoAttachment.fileName || 'Attached Memory Photo')}
+              </h4>
+              <div className="text-[11px] text-stone-400 truncate">
+                Visual reflection keepsake
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

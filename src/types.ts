@@ -38,6 +38,15 @@ export interface WebLinkAttachment {
   attachedAt?: string;
 }
 
+export interface PhotoAttachment {
+  url: string;
+  caption?: string;
+  mimeType?: string;
+  fileName?: string;
+  sizeBytes?: number;
+  attachedAt?: string;
+}
+
 export interface JournalEntry {
   id: string;
   userId: string;
@@ -51,6 +60,7 @@ export interface JournalEntry {
   aiActionItems?: string[];
   messages: ChatMessage[];
   photos?: string[];
+  photoAttachment?: PhotoAttachment | null;
   location?: string;
   youtubeAttachment?: YouTubeAttachment | null;
   webLinkAttachment?: WebLinkAttachment | null;
@@ -66,6 +76,7 @@ export interface GenerateReflectionRequest {
   tags?: string[];
   youtubeAttachment?: YouTubeAttachment | null;
   webLinkAttachment?: WebLinkAttachment | null;
+  photoAttachment?: PhotoAttachment | null;
   history?: Array<{
     role: 'user' | 'assistant';
     content: string;

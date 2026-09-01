@@ -97,6 +97,7 @@ export const WrappedView: React.FC<WrappedViewProps> = ({
             photos: e.photos,
             location: e.location,
             createdAt: e.createdAt,
+            photoAttachment: e.photoAttachment,
           })),
         }),
       });

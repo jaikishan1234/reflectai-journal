@@ -159,7 +159,8 @@ function generateSmartLocalReflection(
   mode: string,
   tags: string[] = [],
   youtubeAttachment?: any,
-  webLinkAttachment?: any
+  webLinkAttachment?: any,
+  photoAttachment?: any
 ): { reply: string; insights: string[]; actionItems: string[] } {
   const cleanPrompt = prompt.trim();
   const titleText = entryTitle || 'Your Reflection';
@@ -200,6 +201,9 @@ function generateSmartLocalReflection(
   }
   if (webLinkAttachment && webLinkAttachment.title) {
     contextNotes += `\n\n*Attached Web Context*: Attached to article/link **"${webLinkAttachment.title}"** (${webLinkAttachment.domain || 'Web'}).`;
+  }
+  if (photoAttachment) {
+    contextNotes += `\n\n*Attached Photo Memory*: Attached visual moment **"${photoAttachment.fileName || 'Memory Photo'}"**${photoAttachment.caption ? ` ("${photoAttachment.caption}")` : ''}.`;
   }
 
   switch (mode) {
@@ -298,6 +302,9 @@ When navigating moments recorded in a **${mood}** state, acknowledging both the 
       if (webLinkAttachment && webLinkAttachment.title) {
         insights.push(`Connected personal reflection to article "${webLinkAttachment.title}".`);
       }
+      if (photoAttachment && (photoAttachment.caption || photoAttachment.fileName)) {
+        insights.push(`Associated visual keepsake "${photoAttachment.caption || photoAttachment.fileName}".`);
+      }
       actionItems.push('Reflect briefly on your answer to the introspective question.');
       actionItems.push('Carry one positive insight forward into your daily routine.');
       break;
@@ -383,7 +390,8 @@ function extractRelevantJournalEntries(rawQuestion: string, entries: any[]): {
     'project', 'meeting', 'sleep', 'workout', 'gym', 'book', 'reading', 'movie', 'friend', 'friends',
     'colleague', 'manager', 'money', 'budget', 'routine', 'habit', 'habits', 'distraction', 'phone',
     'notification', 'youtube', 'video', 'watch', 'watching', 'channel', 'lecture', 'tutorial', 'clip',
-    'link', 'links', 'url', 'urls', 'article', 'articles', 'website', 'webpage', 'page', 'site', 'post', 'blog', 'doc', 'docs'
+    'link', 'links', 'url', 'urls', 'article', 'articles', 'website', 'webpage', 'page', 'site', 'post', 'blog', 'doc', 'docs',
+    'photo', 'photos', 'picture', 'pictures', 'image', 'images', 'screenshot', 'camera', 'keepsake', 'keepsakes'
   ];
 
   const containsSpecificTopic = specificTopicIndicators.some(topic => {
@@ -405,12 +413,15 @@ function extractRelevantJournalEntries(rawQuestion: string, entries: any[]): {
     const webTitle = (e.webLinkAttachment?.title || '').toLowerCase();
     const webDomain = (e.webLinkAttachment?.domain || '').toLowerCase();
     const webDesc = (e.webLinkAttachment?.description || '').toLowerCase();
+    const photoFileName = (e.photoAttachment?.fileName || '').toLowerCase();
+    const photoCaption = (e.photoAttachment?.caption || '').toLowerCase();
 
     const titleWords = title.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
     const tagWords = tags.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
     const contentWords = content.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
     const ytWords = `${ytTitle} ${ytChannel}`.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
     const webWords = `${webTitle} ${webDomain} ${webDesc}`.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
+    const photoWords = `${photoFileName} ${photoCaption}`.replace(/[^\w\s]/g, ' ').split(/\s+/).map(stem);
 
     if (isBroadOverview) {
       // For broad queries, all available entries receive baseline relevance
@@ -433,6 +444,9 @@ function extractRelevantJournalEntries(rawQuestion: string, entries: any[]): {
         if (webWords.includes(token) || webTitle.includes(token) || webDomain.includes(token)) {
           score += 15;
         }
+        if (photoWords.includes(token) || photoFileName.includes(token) || photoCaption.includes(token)) {
+          score += 15;
+        }
       }
       // If query is specifically about youtube/video and entry has youtube attachment
       if ((substantiveTokens.includes('youtub') || substantiveTokens.includes('video') || substantiveTokens.includes('watch') || qLower.includes('youtube') || qLower.includes('video')) && e.youtubeAttachment) {
@@ -440,6 +454,10 @@ function extractRelevantJournalEntries(rawQuestion: string, entries: any[]): {
       }
       // If query is specifically about web link/article/website and entry has web link attachment
       if ((substantiveTokens.includes('link') || substantiveTokens.includes('articl') || substantiveTokens.includes('websit') || substantiveTokens.includes('url') || qLower.includes('link') || qLower.includes('article') || qLower.includes('website') || qLower.includes('webpage') || qLower.includes('read')) && e.webLinkAttachment) {
+        score += 20;
+      }
+      // If query is specifically about photo/image/picture and entry has photo attachment
+      if ((substantiveTokens.includes('photo') || substantiveTokens.includes('pictur') || substantiveTokens.includes('imag') || substantiveTokens.includes('screenshot') || qLower.includes('photo') || qLower.includes('image') || qLower.includes('picture')) && e.photoAttachment) {
         score += 20;
       }
     }
@@ -468,6 +486,9 @@ function generateEntryRelevanceSnippet(entry: any, keywords?: string[]): string 
   }
   if (entry.webLinkAttachment && entry.webLinkAttachment.title) {
     attachmentMention += ` [Attached Web Link: "${entry.webLinkAttachment.title}" (${entry.webLinkAttachment.domain || 'Web'})]`;
+  }
+  if (entry.photoAttachment) {
+    attachmentMention += ` [Attached Photo: "${entry.photoAttachment.fileName || 'Memory Photo'}"${entry.photoAttachment.caption ? ` - "${entry.photoAttachment.caption}"` : ''}]`;
   }
 
   if (!content) return `Recorded in reflection "${entry.title || 'Untitled Reflection'}".${attachmentMention}`;
@@ -815,6 +836,7 @@ app.post('/api/gemini/reflect', async (req, res) => {
     const history = Array.isArray(data.history) ? data.history : [];
     const youtubeAttachment = (data.youtubeAttachment && typeof data.youtubeAttachment === 'object') ? data.youtubeAttachment : null;
     const webLinkAttachment = (data.webLinkAttachment && typeof data.webLinkAttachment === 'object') ? data.webLinkAttachment : null;
+    const photoAttachment = (data.photoAttachment && typeof data.photoAttachment === 'object') ? data.photoAttachment : null;
 
     if (!prompt && history.length === 0) {
       return res.status(400).json({
@@ -849,6 +871,9 @@ app.post('/api/gemini/reflect', async (req, res) => {
     if (webLinkAttachment && webLinkAttachment.title) {
       contextString += `\n- Attached Web Link Context:\n  * Title: "${webLinkAttachment.title}"\n  * Domain: "${webLinkAttachment.domain || 'Web'}"\n  * URL: ${webLinkAttachment.url}\n  * Description: "${webLinkAttachment.description || ''}"\n  * Page Excerpt: "${(webLinkAttachment.extractedSnippet || '').slice(0, 300)}"`;
     }
+    if (photoAttachment) {
+      contextString += `\n- Attached Photo / Image Context:\n  * File Name: "${photoAttachment.fileName || 'Memory Photo'}"\n  * Caption: "${photoAttachment.caption || 'No caption provided'}"`;
+    }
 
     const systemInstruction = `You are ReflectAI, an intelligent, empathetic, and confidential reflection and journaling companion.
 Current Journal Context:
@@ -858,7 +883,7 @@ Current Journal Context:
 
 Strict Reflection Directives:
 - The user's journal reflection is the PRIMARY source of truth. Ground insights primarily in the user's authentic thoughts, feelings, and takeaways.
-- Connect the reflection gracefully to the context of attached videos or web articles without pretending to know unstated full details unless mentioned by the user.
+- Connect the reflection gracefully to the context of attached videos, web articles, or photos without pretending to know unstated full details unless mentioned by the user.
 - Maintain a warm, supportive, and non-judgmental tone.
 - Use clear Markdown formatting with headers, bullet points, and bold text.
 - Be concise yet insightful.
@@ -900,7 +925,8 @@ Strict Reflection Directives:
         mode,
         Array.isArray(data.tags) ? data.tags : [],
         youtubeAttachment,
-        webLinkAttachment
+        webLinkAttachment,
+        photoAttachment
       );
       return res.json({
         reply: localResult.reply,
@@ -948,7 +974,9 @@ Strict Reflection Directives:
       typeof req.body?.mood === 'string' ? req.body.mood : 'thoughtful',
       typeof req.body?.mode === 'string' ? req.body.mode : 'reflect',
       Array.isArray(req.body?.tags) ? req.body.tags : [],
-      (req.body?.youtubeAttachment && typeof req.body?.youtubeAttachment === 'object') ? req.body.youtubeAttachment : null
+      (req.body?.youtubeAttachment && typeof req.body?.youtubeAttachment === 'object') ? req.body.youtubeAttachment : null,
+      (req.body?.webLinkAttachment && typeof req.body?.webLinkAttachment === 'object') ? req.body.webLinkAttachment : null,
+      (req.body?.photoAttachment && typeof req.body?.photoAttachment === 'object') ? req.body.photoAttachment : null
     );
     return res.json({
       reply: localResult.reply,
@@ -1273,6 +1301,10 @@ app.post('/api/gemini/ask-journal', async (req, res) => {
         url: e.webLinkAttachment.url,
         description: (e.webLinkAttachment.description || '').slice(0, 150),
         snippet: (e.webLinkAttachment.extractedSnippet || '').slice(0, 200),
+      } : undefined,
+      attachedPhoto: e.photoAttachment ? {
+        fileName: e.photoAttachment.fileName || 'Memory Photo',
+        caption: e.photoAttachment.caption || '',
       } : undefined,
     }));
 
@@ -2635,12 +2667,24 @@ function generateSmartLocalWrapped(
     }
   }
 
-  // Extract photos if any exist in entry.photos or markdown
+  // Extract photos if any exist in entry.photoAttachment, entry.photos or markdown
   const photos: any[] = [];
   for (const e of sortedEntries) {
+    if (e.photoAttachment && (e.photoAttachment.dataUrl || e.photoAttachment.storageUrl || e.photoAttachment.fileName)) {
+      const url = e.photoAttachment.dataUrl || e.photoAttachment.storageUrl || '';
+      if (url) {
+        photos.push({
+          entryId: e.id,
+          entryTitle: e.title || 'Reflection Memory',
+          date: e.createdAt ? new Date(e.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Memory',
+          photoUrl: url,
+          caption: e.photoAttachment.caption || e.photoAttachment.fileName || 'Attached journal image',
+        });
+      }
+    }
     if (Array.isArray(e.photos)) {
       for (const p of e.photos) {
-        if (typeof p === 'string' && p.startsWith('http')) {
+        if (typeof p === 'string' && (p.startsWith('http') || p.startsWith('data:image'))) {
           photos.push({
             entryId: e.id,
             entryTitle: e.title || 'Reflection Memory',
@@ -2651,7 +2695,7 @@ function generateSmartLocalWrapped(
       }
     }
     // Check markdown images
-    const mdImgMatch = (e.content || '').match(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/);
+    const mdImgMatch = (e.content || '').match(/!\[(.*?)\]\((https?:\/\/[^\s)]+|data:image\/[^\s)]+)\)/);
     if (mdImgMatch && mdImgMatch[2]) {
       photos.push({
         entryId: e.id,

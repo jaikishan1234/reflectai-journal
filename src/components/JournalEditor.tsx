@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { JournalEntry, ReflectionMode, YouTubeAttachment, WebLinkAttachment } from '../types';
-import { Sparkles, Save, Tag, Smile, Lightbulb, RotateCw, AlertCircle, Video, Plus, X, ExternalLink, Clock, Link as LinkIcon, Globe } from 'lucide-react';
+import { JournalEntry, ReflectionMode, YouTubeAttachment, WebLinkAttachment, PhotoAttachment } from '../types';
+import { Sparkles, Save, Tag, Smile, Lightbulb, RotateCw, AlertCircle, Video, Plus, X, ExternalLink, Clock, Link as LinkIcon, Globe, Image as ImageIcon } from 'lucide-react';
 
 interface JournalEditorProps {
   entry: JournalEntry;
@@ -35,6 +35,50 @@ const PROMPT_STARTERS = [
   'Where am I feeling friction or resistance, and why?',
 ];
 
+// Helper to optimize and downscale image client-side for reliable local & cloud persistence
+const optimizeImageFile = (file: File): Promise<{ dataUrl: string; width: number; height: number }> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX_DIM = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve({ dataUrl: e.target?.result as string, width: img.width, height: img.height });
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        const mimeType = file.type === 'image/png' ? 'image/png' : (file.type === 'image/gif' ? 'image/gif' : 'image/jpeg');
+        const quality = mimeType === 'image/jpeg' ? 0.85 : undefined;
+        const dataUrl = canvas.toDataURL(mimeType, quality);
+        resolve({ dataUrl, width, height });
+      };
+      img.onerror = () => reject(new Error('Failed to parse selected image.'));
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error('Failed to read image file.'));
+    reader.readAsDataURL(file);
+  });
+};
+
 export const JournalEditor: React.FC<JournalEditorProps> = ({
   entry,
   onSave,
@@ -67,7 +111,14 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
   const [isLoadingWebLink, setIsLoadingWebLink] = useState(false);
   const [webLinkError, setWebLinkError] = useState<string | null>(null);
 
+  // Photo Context Attachment State
+  const [photoAttachment, setPhotoAttachment] = useState<PhotoAttachment | null>(entry.photoAttachment || null);
+  const [stagedPhoto, setStagedPhoto] = useState<PhotoAttachment | null>(null);
+  const [photoCaptionInput, setPhotoCaptionInput] = useState(entry.photoAttachment?.caption || '');
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
   const contextMenuRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Close context menu when clicking outside
   useEffect(() => {
@@ -105,6 +156,11 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
     setShowWebLinkInput(false);
     setWebUrlInput('');
     setWebLinkError(null);
+
+    setPhotoAttachment(entry.photoAttachment || null);
+    setStagedPhoto(null);
+    setPhotoCaptionInput(entry.photoAttachment?.caption || '');
+    setPhotoError(null);
 
     setIsContextMenuOpen(false);
     setHasUnsavedChanges(false);
@@ -252,6 +308,84 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
     setHasUnsavedChanges(true);
   };
 
+  // Photo Selection and Staging Handlers
+  const handlePhotoSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    setPhotoError(null);
+
+    // Validate MIME type
+    const validMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    if (!validMimes.includes(file.type.toLowerCase())) {
+      setPhotoError('Please choose a valid image format (JPG, PNG, WebP, or GIF).');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    // Validate File Size (limit to 8MB)
+    if (file.size > 8 * 1024 * 1024) {
+      setPhotoError('Selected image is too large (exceeds 8MB). Please choose a smaller image.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    try {
+      const { dataUrl } = await optimizeImageFile(file);
+      const stagedCandidate: PhotoAttachment = {
+        url: dataUrl,
+        fileName: file.name,
+        mimeType: file.type,
+        sizeBytes: file.size,
+        caption: photoCaptionInput.trim() || undefined,
+        attachedAt: new Date().toISOString(),
+      };
+      setStagedPhoto(stagedCandidate);
+    } catch (err: any) {
+      setPhotoError(err?.message || 'Could not process the selected image.');
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleCommitAttachPhoto = () => {
+    if (!stagedPhoto) return;
+    const committed: PhotoAttachment = {
+      ...stagedPhoto,
+      caption: photoCaptionInput.trim() || undefined,
+      attachedAt: new Date().toISOString(),
+    };
+    setPhotoAttachment(committed);
+    setStagedPhoto(null);
+    setHasUnsavedChanges(true);
+  };
+
+  const handleCancelStagedPhoto = () => {
+    setStagedPhoto(null);
+    setPhotoError(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleRemovePhotoAttachment = () => {
+    setPhotoAttachment(null);
+    setPhotoCaptionInput('');
+    setPhotoError(null);
+    setHasUnsavedChanges(true);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handlePhotoCaptionChange = (val: string) => {
+    setPhotoCaptionInput(val);
+    if (photoAttachment && !stagedPhoto) {
+      setPhotoAttachment({
+        ...photoAttachment,
+        caption: val,
+      });
+      setHasUnsavedChanges(true);
+    }
+  };
+
   const handleSaveOnly = () => {
     const updatedEntry: JournalEntry = {
       ...entry,
@@ -262,6 +396,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
       tags,
       youtubeAttachment: youtubeAttachment || undefined,
       webLinkAttachment: webLinkAttachment || undefined,
+      photoAttachment: photoAttachment || undefined,
       updatedAt: new Date().toISOString(),
     };
     onSave(updatedEntry);
@@ -279,6 +414,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
       tags,
       youtubeAttachment: youtubeAttachment || undefined,
       webLinkAttachment: webLinkAttachment || undefined,
+      photoAttachment: photoAttachment || undefined,
       updatedAt: new Date().toISOString(),
     };
     onSave(updatedEntry);
@@ -290,6 +426,14 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
 
   return (
     <div className="w-full bg-stone-900/90 border border-stone-800 rounded-2xl p-4 sm:p-6 shadow-xl relative">
+      {/* Hidden File Input for Photo Picker */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="hidden"
+        onChange={handlePhotoSelected}
+      />
       {/* Error Alert Banner if any */}
       {errorMessage && (
         <div className="mb-4 p-3 bg-rose-950/80 border border-rose-800 rounded-xl flex items-center justify-between gap-3 text-xs text-rose-200">
@@ -311,6 +455,22 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
               ✕
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Photo Error Banner if any */}
+      {photoError && (
+        <div className="mb-4 p-3 bg-rose-950/80 border border-rose-800 rounded-xl flex items-center justify-between gap-3 text-xs text-rose-200">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <span>{photoError}</span>
+          </div>
+          <button
+            onClick={() => setPhotoError(null)}
+            className="text-stone-400 hover:text-stone-200 text-xs px-1 cursor-pointer"
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -363,12 +523,28 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                     setShowYoutubeInput(false);
                     setIsContextMenuOpen(false);
                   }}
-                  className="w-full px-3 py-2 text-left text-xs text-stone-200 hover:bg-stone-800/80 flex items-center gap-2 transition-colors cursor-pointer"
+                  className="w-full px-3 py-2 text-left text-xs text-stone-200 hover:bg-stone-800/80 flex items-center gap-2 transition-colors cursor-pointer border-b border-stone-800/60"
                 >
                   <LinkIcon className="w-4 h-4 text-cyan-400 shrink-0" />
                   <div>
                     <div className="font-semibold">Web Link</div>
                     <div className="text-[10px] text-stone-400">Attach article or webpage</div>
+                  </div>
+                </button>
+
+                <button
+                  id="add-photo-context-option"
+                  onClick={() => {
+                    setIsContextMenuOpen(false);
+                    setPhotoError(null);
+                    fileInputRef.current?.click();
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs text-stone-200 hover:bg-stone-800/80 flex items-center gap-2 transition-colors cursor-pointer"
+                >
+                  <ImageIcon className="w-4 h-4 text-amber-400 shrink-0" />
+                  <div>
+                    <div className="font-semibold">Photo</div>
+                    <div className="text-[10px] text-stone-400">Attach visual memory</div>
                   </div>
                 </button>
               </div>
@@ -636,6 +812,159 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
             >
               <X className="w-3.5 h-3.5" />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Photo Staging & Preview Drawer (Before Attachment Confirmation) */}
+      {stagedPhoto && (
+        <div 
+          id="photo-staging-drawer"
+          className="mb-4 p-3.5 bg-stone-950/90 border border-amber-500/30 rounded-xl animate-in fade-in slide-in-from-top-2 duration-150"
+        >
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-300">
+              <ImageIcon className="w-4 h-4 text-amber-400" />
+              <span>Attach Photo Context</span>
+            </div>
+            <button
+              id="cancel-staged-photo-x-btn"
+              type="button"
+              onClick={handleCancelStagedPhoto}
+              className="text-stone-400 hover:text-stone-200 text-xs p-1 cursor-pointer"
+              title="Cancel"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <p className="text-[11px] text-stone-400 mb-2.5">
+            Preview your visual memory and add an optional caption before attaching it to this reflection.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 items-start">
+            <div className="relative rounded-lg overflow-hidden bg-stone-900 border border-stone-800 shrink-0 max-w-xs w-full sm:w-48">
+              <img
+                src={stagedPhoto.url}
+                alt={stagedPhoto.caption || stagedPhoto.fileName || 'Selected photo preview'}
+                referrerPolicy="no-referrer"
+                className="w-full h-32 object-cover"
+              />
+            </div>
+
+            <div className="flex-1 w-full space-y-2">
+              <div>
+                <label htmlFor="staged-photo-caption-input" className="text-[11px] font-medium text-stone-400 block mb-1">
+                  Optional caption:
+                </label>
+                <input
+                  id="staged-photo-caption-input"
+                  type="text"
+                  placeholder="What does this moment mean? (e.g. Finally finished the project)"
+                  value={photoCaptionInput}
+                  onChange={(e) => setPhotoCaptionInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleCommitAttachPhoto();
+                    }
+                  }}
+                  className="w-full bg-stone-900 border border-stone-800 rounded-lg px-3 py-1.5 text-xs text-stone-200 placeholder-stone-600 focus:outline-hidden focus:border-amber-500/50"
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+                <div className="text-[10px] text-stone-500 truncate">
+                  {stagedPhoto.fileName} ({Math.round(stagedPhoto.sizeBytes / 1024)} KB)
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <button
+                    type="button"
+                    id="cancel-staged-photo-btn"
+                    onClick={handleCancelStagedPhoto}
+                    className="px-3 py-1.5 bg-stone-900 hover:bg-stone-850 text-stone-400 hover:text-stone-200 text-xs font-medium rounded-lg border border-stone-800 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    id="attach-photo-btn"
+                    onClick={handleCommitAttachPhoto}
+                    className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-stone-950 font-semibold text-xs rounded-lg transition-colors cursor-pointer shrink-0 flex items-center justify-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Attach Photo</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Attached Photo Context Card */}
+      {photoAttachment && !stagedPhoto && (
+        <div 
+          id="attached-photo-card"
+          className="mb-4 p-3.5 bg-stone-950/85 border border-amber-500/30 hover:border-amber-500/50 rounded-xl flex flex-col gap-3 transition-colors"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-[10px] font-semibold text-amber-400 uppercase tracking-wider">
+              <ImageIcon className="w-3.5 h-3.5" />
+              <span>Attached Photo Context</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setPhotoError(null);
+                  fileInputRef.current?.click();
+                }}
+                className="text-[11px] text-stone-400 hover:text-amber-300 transition-colors cursor-pointer px-2 py-0.5 rounded-md hover:bg-stone-900"
+                title="Choose a different image"
+              >
+                Replace Photo
+              </button>
+              <button
+                id="remove-photo-attachment-btn"
+                type="button"
+                onClick={handleRemovePhotoAttachment}
+                className="p-1 text-stone-500 hover:text-rose-400 hover:bg-stone-900 rounded-md transition-colors cursor-pointer"
+                title="Remove photo context"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 items-start">
+            <div className="relative rounded-lg overflow-hidden bg-stone-900 border border-stone-800 shrink-0 max-w-xs w-full sm:w-48">
+              <img
+                src={photoAttachment.url}
+                alt={photoAttachment.caption || 'Attached journal photo'}
+                referrerPolicy="no-referrer"
+                className="w-full h-36 object-cover"
+              />
+            </div>
+
+            <div className="flex-1 w-full space-y-1.5">
+              <label className="text-[11px] font-medium text-stone-400 block">
+                Optional caption:
+              </label>
+              <input
+                id="photo-caption-input"
+                type="text"
+                placeholder="What does this moment mean? (e.g. Finally finished the project)"
+                value={photoCaptionInput}
+                onChange={(e) => handlePhotoCaptionChange(e.target.value)}
+                className="w-full bg-stone-900 border border-stone-800 rounded-lg px-3 py-1.5 text-xs text-stone-200 placeholder-stone-600 focus:outline-hidden focus:border-amber-500/50"
+              />
+              <p className="text-[10px] text-stone-500">
+                The photo and caption ground your reflection. Removing the photo will not delete the journal entry.
+              </p>
+            </div>
           </div>
         </div>
       )}

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { JournalEntry } from '../types';
-import { Search, Plus, Trash2, Calendar, Download, Sparkles, Filter, Smile, Video, Link as LinkIcon } from 'lucide-react';
+import { Search, Plus, Trash2, Calendar, Download, Sparkles, Filter, Smile, Video, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
 
 interface HistorySidebarProps {
   entries: JournalEntry[];
@@ -51,6 +51,15 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({
       mdContent += `## ${idx + 1}. ${e.title}\n`;
       mdContent += `*Date: ${new Date(e.createdAt).toLocaleString()} | Mood: ${e.mood} | Mode: ${e.mode}*\n\n`;
       mdContent += `### Journal Content\n${e.content}\n\n`;
+      if (e.youtubeAttachment) {
+        mdContent += `*Attached Video Context: ${e.youtubeAttachment.title} (${e.youtubeAttachment.url})*\n\n`;
+      }
+      if (e.webLinkAttachment) {
+        mdContent += `*Attached Web Link: ${e.webLinkAttachment.title} (${e.webLinkAttachment.url})*\n\n`;
+      }
+      if (e.photoAttachment) {
+        mdContent += `*Attached Photo: ${e.photoAttachment.fileName || 'Memory Photo'}${e.photoAttachment.caption ? ` - "${e.photoAttachment.caption}"` : ''}*\n\n`;
+      }
       if (e.aiResponse) {
         mdContent += `### Gemini AI Reflection\n${e.aiResponse}\n\n`;
       }
@@ -184,6 +193,12 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({
                       <span className="text-[9px] px-1.5 py-0.5 bg-cyan-950/40 border border-cyan-800/40 rounded text-cyan-400 flex items-center gap-0.5" title={`Connected Web Link: ${e.webLinkAttachment.domain}`}>
                         <LinkIcon className="w-2.5 h-2.5" />
                         Link
+                      </span>
+                    )}
+                    {e.photoAttachment && (
+                      <span className="text-[9px] px-1.5 py-0.5 bg-amber-950/40 border border-amber-800/40 rounded text-amber-300 flex items-center gap-0.5" title="Attached Photo Context">
+                        <ImageIcon className="w-2.5 h-2.5" />
+                        Photo
                       </span>
                     )}
                     {e.aiResponse && (
