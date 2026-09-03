@@ -1,4 +1,4 @@
-export type ActiveViewType = 'journal' | 'insights' | 'ask_journal' | 'story' | 'wellbeing' | 'wrapped';
+export type ActiveViewType = 'journal' | 'intelligence' | 'insights' | 'ask_journal' | 'story' | 'wellbeing' | 'wrapped';
 
 export interface UserProfile {
   uid: string;
@@ -345,6 +345,121 @@ export interface WrappedDataResponse {
   hasSufficientContext: boolean;
 }
 
+// ==========================================
+// FEATURE 8: DEEPER JOURNAL INTELLIGENCE
+// ==========================================
 
+export type TimeRangeFilter = '7d' | '30d' | '90d' | '1y' | 'all';
 
+export interface IntelligenceSupportingEntry {
+  entryId: string;
+  entryTitle: string;
+  date: string;
+  dateFormatted?: string;
+  excerpt: string;
+  mood?: string;
+  tags?: string[];
+}
 
+export interface IntelligenceTopic {
+  id: string;
+  name: string;
+  count: number;
+  recentAppearanceDate: string;
+  description: string;
+  supportingEntries: IntelligenceSupportingEntry[];
+}
+
+export interface IntelligencePattern {
+  id: string;
+  title: string;
+  patternType: 'situational' | 'theme' | 'routine';
+  observation: string;
+  evidenceExplanation: string;
+  confidence: 'high' | 'moderate';
+  supportingEntries: IntelligenceSupportingEntry[];
+}
+
+export interface BehavioralPattern {
+  id: string;
+  behaviorTitle: string;
+  category: 'planning' | 'habit' | 'response' | 'focus' | 'rest' | 'routine';
+  description: string;
+  manifestation: string;
+  supportingEntries: IntelligenceSupportingEntry[];
+}
+
+export interface GrowthComparison {
+  dimension: string;
+  earlierSummary: string;
+  recentSummary: string;
+  trendType: 'positive_evolution' | 'shifting_priorities' | 'iterative_learning' | 'emerging';
+  earlierEvidence: IntelligenceSupportingEntry[];
+  recentEvidence: IntelligenceSupportingEntry[];
+}
+
+export interface EntryConnection {
+  id: string;
+  relationshipType: 'goal_evolution' | 'recurring_challenge' | 'idea_development' | 'cause_and_reflection';
+  connectionHeadline: string;
+  narrative: string;
+  entryA: IntelligenceSupportingEntry;
+  entryB: IntelligenceSupportingEntry;
+}
+
+export interface LongTermInsight {
+  id: string;
+  title: string;
+  category: 'mindset' | 'energy' | 'productivity' | 'values' | 'growth';
+  explanation: string;
+  takeaway: string;
+  timeframeNotes?: string;
+  supportingEntries: IntelligenceSupportingEntry[];
+}
+
+export interface JournalActivityStats {
+  totalEntriesInPeriod: number;
+  totalEntriesAllTime: number;
+  entriesPerWeek: number;
+  entriesPerMonth: number;
+  activeDaysCount: number;
+  longestWritingGapDays: number;
+  shortestWritingGapDays: number;
+  averageWordsPerEntry: number;
+  firstEntryDate?: string;
+  latestEntryDate?: string;
+  writingCadenceDescription: string;
+}
+
+export interface MoodTrendData {
+  hasSufficientData: boolean;
+  dominantMood: string;
+  direction: 'improving' | 'stable' | 'fluctuating' | 'declining' | 'insufficient_data';
+  directionNarrative: string;
+  moodDistribution: Record<string, number>;
+  totalLoggedMoods: number;
+  timeline: Array<{
+    date: string;
+    dateFormatted: string;
+    mood: string;
+    entryTitle: string;
+    entryId: string;
+  }>;
+}
+
+export interface JournalIntelligenceData {
+  timeRange: TimeRangeFilter;
+  generatedAt: string;
+  analyzedEntryCount: number;
+  totalAvailableEntries: number;
+  hasSufficientHistory: boolean;
+  activityStats: JournalActivityStats;
+  moodTrends: MoodTrendData;
+  recurringTopics: IntelligenceTopic[];
+  recurringPatterns: IntelligencePattern[];
+  behavioralPatterns: BehavioralPattern[];
+  personalGrowth: GrowthComparison[];
+  connections: EntryConnection[];
+  longTermInsights: LongTermInsight[];
+  modelUsed: string;
+}

@@ -14,7 +14,8 @@ import {
   Gift,
   ChevronDown,
   Activity,
-  BarChart2
+  BarChart2,
+  Brain
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -114,6 +115,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>Journal</span>
+              </button>
+
+              {/* Journal Intelligence (Feature 8) */}
+              <button
+                id="nav-tab-intelligence"
+                onClick={() => onViewChange('intelligence')}
+                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activeView === 'intelligence'
+                    ? 'bg-stone-800 text-amber-400 shadow-xs border border-stone-700'
+                    : 'text-stone-400 hover:text-stone-200'
+                }`}
+              >
+                <Brain className="w-3.5 h-3.5" />
+                <span>Intelligence</span>
               </button>
 
               {/* Personal Insights Dropdown */}

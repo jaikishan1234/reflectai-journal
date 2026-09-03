@@ -15,6 +15,7 @@ import { AskJournalView } from './components/AskJournalView';
 import { YourStoryView } from './components/YourStoryView';
 import { WellbeingView } from './components/WellbeingView';
 import { WrappedView } from './components/WrappedView';
+import { JournalIntelligenceView } from './components/JournalIntelligenceView';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => StorageService.getCurrentUser());
@@ -326,6 +327,21 @@ export default function App() {
       <main className="flex-1 flex flex-col">
         {!currentUser ? (
           <LandingHero onSignIn={() => setIsAuthModalOpen(true)} />
+        ) : activeView === 'intelligence' ? (
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 flex flex-col">
+            <JournalIntelligenceView
+              entries={entries}
+              user={currentUser}
+              onNewEntry={() => {
+                handleCreateNewEntry();
+                setActiveView('journal');
+              }}
+              onSelectEntry={(entry) => {
+                setActiveEntry(entry);
+                setActiveView('journal');
+              }}
+            />
+          </div>
         ) : activeView === 'insights' ? (
           <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 flex flex-col">
             <PersonalInsightsView

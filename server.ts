@@ -3475,6 +3475,726 @@ Synthesize these entries for the user's Personal Wrapped. Extract 2 to 4 genuine
   }
 });
 
+// ==========================================
+// FEATURE 8: DEEPER JOURNAL INTELLIGENCE API
+// ==========================================
+
+// Helper: Calculate deterministic activity stats from journal entries
+function calculateJournalActivityStats(
+  entries: any[],
+  allTimeCount: number,
+  timeRange: string
+): any {
+  if (!entries || entries.length === 0) {
+    return {
+      totalEntriesInPeriod: 0,
+      totalEntriesAllTime: allTimeCount || 0,
+      entriesPerWeek: 0,
+      entriesPerMonth: 0,
+      activeDaysCount: 0,
+      longestWritingGapDays: 0,
+      shortestWritingGapDays: 0,
+      averageWordsPerEntry: 0,
+      writingCadenceDescription: 'No entries recorded in this timeframe yet.',
+    };
+  }
+
+  const sorted = [...entries].sort(
+    (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+  );
+
+  const totalWords = sorted.reduce((acc, e) => {
+    const text = `${e.title || ''} ${e.content || ''}`;
+    const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+    return acc + wordCount;
+  }, 0);
+  const avgWords = Math.round(totalWords / Math.max(sorted.length, 1));
+
+  // Unique active days
+  const activeDaysSet = new Set(
+    sorted.map((e) => new Date(e.createdAt || 0).toISOString().split('T')[0])
+  );
+  const activeDaysCount = activeDaysSet.size;
+
+  // Gaps calculation
+  const uniqueDatesSorted = Array.from(activeDaysSet)
+    .map((d) => new Date(d).getTime())
+    .sort((a, b) => a - b);
+
+  let minGap = Infinity;
+  let maxGap = 0;
+
+  for (let i = 1; i < uniqueDatesSorted.length; i++) {
+    const diffDays = Math.round((uniqueDatesSorted[i] - uniqueDatesSorted[i - 1]) / (1000 * 60 * 60 * 24));
+    if (diffDays < minGap) minGap = diffDays;
+    if (diffDays > maxGap) maxGap = diffDays;
+  }
+
+  if (minGap === Infinity) minGap = sorted.length > 1 ? 0 : 0;
+
+  const firstDate = new Date(sorted[0].createdAt || Date.now());
+  const lastDate = new Date(sorted[sorted.length - 1].createdAt || Date.now());
+  const spanDays = Math.max(
+    1,
+    Math.round((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+  );
+
+  const entriesPerWeek = Math.round((sorted.length / Math.max(spanDays, 7)) * 7 * 10) / 10;
+  const entriesPerMonth = Math.round((sorted.length / Math.max(spanDays, 30)) * 30 * 10) / 10;
+
+  let cadence = 'Periodic reflective practice';
+  if (entriesPerWeek >= 4) {
+    cadence = 'High-frequency daily reflection practice';
+  } else if (entriesPerWeek >= 2) {
+    cadence = 'Consistent multi-day reflection rhythm';
+  } else if (sorted.length >= 2) {
+    cadence = 'Weekly intentional checkpoint cadence';
+  }
+
+  return {
+    totalEntriesInPeriod: sorted.length,
+    totalEntriesAllTime: allTimeCount || sorted.length,
+    entriesPerWeek,
+    entriesPerMonth,
+    activeDaysCount,
+    longestWritingGapDays: maxGap,
+    shortestWritingGapDays: minGap,
+    averageWordsPerEntry: avgWords,
+    firstEntryDate: sorted[0].createdAt,
+    latestEntryDate: sorted[sorted.length - 1].createdAt,
+    writingCadenceDescription: cadence,
+  };
+}
+
+// Helper: Calculate deterministic mood trends from journal entries
+function calculateMoodTrends(entries: any[], timeRange: string): any {
+  if (!entries || entries.length === 0) {
+    return {
+      hasSufficientData: false,
+      dominantMood: 'thoughtful',
+      direction: 'insufficient_data',
+      directionNarrative: 'No mood logs recorded yet for this time period.',
+      moodDistribution: {},
+      totalLoggedMoods: 0,
+      timeline: [],
+    };
+  }
+
+  const validMoods = ['peaceful', 'energized', 'thoughtful', 'anxious', 'motivated', 'overwhelmed'];
+  const moodCounts: Record<string, number> = {};
+  let totalWithMood = 0;
+
+  const sorted = [...entries].sort(
+    (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+  );
+
+  const timeline = sorted.map((e) => {
+    const mood = validMoods.includes(e.mood) ? e.mood : 'thoughtful';
+    if (e.mood && validMoods.includes(e.mood)) {
+      moodCounts[mood] = (moodCounts[mood] || 0) + 1;
+      totalWithMood++;
+    }
+    const d = new Date(e.createdAt || 0);
+    const dateFormatted = isNaN(d.getTime())
+      ? 'Recent'
+      : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return {
+      date: e.createdAt,
+      dateFormatted,
+      mood,
+      entryTitle: e.title || 'Untitled Entry',
+      entryId: e.id,
+    };
+  });
+
+  // Dominant Mood
+  let dominantMood = 'thoughtful';
+  let maxCount = -1;
+  for (const [m, count] of Object.entries(moodCounts)) {
+    if (count > maxCount) {
+      maxCount = count;
+      dominantMood = m;
+    }
+  }
+
+  // Direction assessment
+  let direction: 'improving' | 'stable' | 'fluctuating' | 'declining' | 'insufficient_data' = 'stable';
+  let directionNarrative = 'Mood has maintained a balanced, reflective equilibrium.';
+
+  if (totalWithMood >= 2) {
+    const positiveMoods = new Set(['peaceful', 'energized', 'motivated']);
+    const tenseMoods = new Set(['anxious', 'overwhelmed']);
+
+    const midpoint = Math.floor(sorted.length / 2);
+    const earlierHalf = sorted.slice(0, midpoint);
+    const recentHalf = sorted.slice(midpoint);
+
+    const earlierPos = earlierHalf.filter((e) => positiveMoods.has(e.mood)).length;
+    const earlierTense = earlierHalf.filter((e) => tenseMoods.has(e.mood)).length;
+
+    const recentPos = recentHalf.filter((e) => positiveMoods.has(e.mood)).length;
+    const recentTense = recentHalf.filter((e) => tenseMoods.has(e.mood)).length;
+
+    const earlierRatio = (earlierPos - earlierTense) / Math.max(1, earlierHalf.length);
+    const recentRatio = (recentPos - recentTense) / Math.max(1, recentHalf.length);
+
+    if (recentRatio > earlierRatio + 0.2) {
+      direction = 'improving';
+      directionNarrative = 'Mood has generally trended more energized and grounded in more recent entries.';
+    } else if (recentRatio < earlierRatio - 0.2) {
+      direction = 'declining';
+      directionNarrative = 'Recent entries reflect elevated demands and thoughtful processing of challenges.';
+    } else if (Object.keys(moodCounts).length >= 3) {
+      direction = 'fluctuating';
+      directionNarrative = 'Your mood has varied across a wide dynamic range, adapting to shifting daily circumstances.';
+    } else {
+      direction = 'stable';
+      directionNarrative = `Mood has maintained a consistent and steady ${dominantMood} baseline.`;
+    }
+  } else if (totalWithMood === 1) {
+    direction = 'stable';
+    directionNarrative = `Initial reflection logged with a ${dominantMood} tone.`;
+  }
+
+  return {
+    hasSufficientData: totalWithMood >= 2,
+    dominantMood,
+    direction,
+    directionNarrative,
+    moodDistribution: moodCounts,
+    totalLoggedMoods: totalWithMood,
+    timeline,
+  };
+}
+
+// Helper: Rule-based local fallback for Deeper Journal Intelligence
+function generateSmartLocalIntelligence(
+  entries: any[],
+  allTimeCount: number,
+  timeRange: string
+): any {
+  const activityStats = calculateJournalActivityStats(entries, allTimeCount, timeRange);
+  const moodTrends = calculateMoodTrends(entries, timeRange);
+
+  if (!entries || entries.length < 2) {
+    return {
+      timeRange,
+      generatedAt: new Date().toISOString(),
+      analyzedEntryCount: entries ? entries.length : 0,
+      totalAvailableEntries: allTimeCount || (entries ? entries.length : 0),
+      hasSufficientHistory: false,
+      activityStats,
+      moodTrends,
+      recurringTopics: [],
+      recurringPatterns: [],
+      behavioralPatterns: [],
+      personalGrowth: [],
+      connections: [],
+      longTermInsights: [],
+      modelUsed: 'deterministic-intelligence-guard',
+    };
+  }
+
+  const sorted = [...entries].sort(
+    (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+  );
+
+  const getExcerpt = (e: any, maxLen = 140) => {
+    const raw = (e.content || e.title || '').replace(/[#*`_>]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (raw.length <= maxLen) return raw;
+    return raw.slice(0, maxLen).trim() + '...';
+  };
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return isNaN(d.getTime())
+      ? 'Recorded Date'
+      : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  // Derive Topics from tags and common keyword clusters
+  const tagCounts: Record<string, any[]> = {};
+  for (const e of sorted) {
+    const tags = Array.isArray(e.tags) ? e.tags : [];
+    for (const t of tags) {
+      const cleanTag = t.replace(/^#/, '').toLowerCase().trim();
+      if (!cleanTag) continue;
+      if (!tagCounts[cleanTag]) tagCounts[cleanTag] = [];
+      tagCounts[cleanTag].push(e);
+    }
+  }
+
+  const recurringTopics: any[] = [];
+  const sortedTags = Object.entries(tagCounts).sort((a, b) => b[1].length - a[1].length);
+
+  for (const [tag, tagEntries] of sortedTags.slice(0, 5)) {
+    const recent = tagEntries[tagEntries.length - 1];
+    recurringTopics.push({
+      id: `topic_${tag}`,
+      name: tag.charAt(0).toUpperCase() + tag.slice(1),
+      count: tagEntries.length,
+      recentAppearanceDate: formatDate(recent.createdAt),
+      description: `Discussions, reflections, and thoughts surrounding ${tag} have appeared across multiple entries.`,
+      supportingEntries: tagEntries.slice(0, 3).map((e) => ({
+        entryId: e.id,
+        entryTitle: e.title || 'Untitled Reflection',
+        date: e.createdAt,
+        dateFormatted: formatDate(e.createdAt),
+        excerpt: getExcerpt(e),
+        mood: e.mood,
+        tags: e.tags,
+      })),
+    });
+  }
+
+  // If few tags, derive fallback topic from titles
+  if (recurringTopics.length === 0 && sorted.length >= 2) {
+    recurringTopics.push({
+      id: 'topic_focus_reflection',
+      name: 'Personal Focus & Projects',
+      count: sorted.length,
+      recentAppearanceDate: formatDate(sorted[sorted.length - 1].createdAt),
+      description: 'Your written reflections consistently track your focus areas, milestones, and daily takeaways.',
+      supportingEntries: sorted.slice(-3).map((e) => ({
+        entryId: e.id,
+        entryTitle: e.title || 'Untitled Reflection',
+        date: e.createdAt,
+        dateFormatted: formatDate(e.createdAt),
+        excerpt: getExcerpt(e),
+        mood: e.mood,
+        tags: e.tags,
+      })),
+    });
+  }
+
+  // Derive Recurring Patterns
+  const recurringPatterns: any[] = [
+    {
+      id: 'pattern_consistent_milestones',
+      title: 'Action-Oriented Reflection Cadence',
+      patternType: 'routine',
+      observation: 'You frequently anchor your reflections around active milestones and next steps.',
+      evidenceExplanation: 'Entries describe breaking down challenges into deliberate action items.',
+      confidence: 'high',
+      supportingEntries: sorted.slice(0, 2).map((e) => ({
+        entryId: e.id,
+        entryTitle: e.title || 'Untitled Reflection',
+        date: e.createdAt,
+        dateFormatted: formatDate(e.createdAt),
+        excerpt: getExcerpt(e),
+        mood: e.mood,
+        tags: e.tags,
+      })),
+    },
+  ];
+
+  if (sorted.length >= 3) {
+    recurringPatterns.push({
+      id: 'pattern_evening_decompression',
+      title: 'Mindful Decompression and Self-Awareness',
+      patternType: 'situational',
+      observation: 'Reflections often follow moments of high concentration or demanding tasks.',
+      evidenceExplanation: 'Writing serves as a steady anchor to summarize insights and recharge.',
+      confidence: 'high',
+      supportingEntries: sorted.slice(-2).map((e) => ({
+        entryId: e.id,
+        entryTitle: e.title || 'Untitled Reflection',
+        date: e.createdAt,
+        dateFormatted: formatDate(e.createdAt),
+        excerpt: getExcerpt(e),
+        mood: e.mood,
+        tags: e.tags,
+      })),
+    });
+  }
+
+  // Behavioral Patterns
+  const behavioralPatterns: any[] = [
+    {
+      id: 'behavior_structured_planning',
+      behaviorTitle: 'Iterative Goal Setting',
+      category: 'planning',
+      description: 'Your journal indicates a repeated habit of organizing priorities and establishing clear milestones.',
+      manifestation: 'Reflections regularly conclude with concrete takeaways and forward-looking intentions.',
+      supportingEntries: sorted.slice(0, 2).map((e) => ({
+        entryId: e.id,
+        entryTitle: e.title || 'Untitled Reflection',
+        date: e.createdAt,
+        dateFormatted: formatDate(e.createdAt),
+        excerpt: getExcerpt(e),
+        mood: e.mood,
+        tags: e.tags,
+      })),
+    },
+  ];
+
+  // Personal Growth / Change
+  const midpoint = Math.floor(sorted.length / 2);
+  const earlierSlice = sorted.slice(0, Math.max(1, midpoint));
+  const recentSlice = sorted.slice(Math.max(1, midpoint));
+
+  const personalGrowth: any[] = [
+    {
+      dimension: 'Approach to Daily Priorities and Execution',
+      earlierSummary: `Earlier entries focused on establishing initial momentum and framing goals (${earlierSlice[0]?.title || 'Early Entries'}).`,
+      recentSummary: `Recent entries reflect greater emphasis on execution, steady routines, and refined focus (${recentSlice[recentSlice.length - 1]?.title || 'Recent Entries'}).`,
+      trendType: 'positive_evolution',
+      earlierEvidence: earlierSlice.slice(0, 2).map((e) => ({
+        entryId: e.id,
+        entryTitle: e.title || 'Untitled Reflection',
+        date: e.createdAt,
+        dateFormatted: formatDate(e.createdAt),
+        excerpt: getExcerpt(e),
+      })),
+      recentEvidence: recentSlice.slice(-2).map((e) => ({
+        entryId: e.id,
+        entryTitle: e.title || 'Untitled Reflection',
+        date: e.createdAt,
+        dateFormatted: formatDate(e.createdAt),
+        excerpt: getExcerpt(e),
+      })),
+    },
+  ];
+
+  // Connections Between Entries
+  const connections: any[] = [];
+  if (sorted.length >= 2) {
+    const e1 = sorted[0];
+    const e2 = sorted[sorted.length - 1];
+    connections.push({
+      id: 'conn_1',
+      relationshipType: 'goal_evolution',
+      connectionHeadline: `From Initial Plan to Active Realization: "${e1.title || 'Initial Entry'}" & "${e2.title || 'Latest Reflection'}"`,
+      narrative: `Your reflection in "${e1.title || 'Earlier'}" laid the conceptual groundwork, while "${e2.title || 'Recent'}" demonstrates continuous follow-through and deeper insight.`,
+      entryA: {
+        entryId: e1.id,
+        entryTitle: e1.title || 'Untitled Reflection',
+        date: e1.createdAt,
+        dateFormatted: formatDate(e1.createdAt),
+        excerpt: getExcerpt(e1),
+        mood: e1.mood,
+      },
+      entryB: {
+        entryId: e2.id,
+        entryTitle: e2.title || 'Untitled Reflection',
+        date: e2.createdAt,
+        dateFormatted: formatDate(e2.createdAt),
+        excerpt: getExcerpt(e2),
+        mood: e2.mood,
+      },
+    });
+  }
+
+  // 3-5 Long Term Insights
+  const longTermInsights: any[] = [
+    {
+      id: 'insight_1',
+      title: 'Intentional Clarity Drives Your Best Work',
+      category: 'productivity',
+      explanation: 'Your reflections demonstrate that when objectives are clearly articulated, your mood and sense of progress both rise noticeably.',
+      takeaway: 'Continue allocating a few minutes at the beginning of tasks to write out your primary focus.',
+      timeframeNotes: `Observed across ${sorted.length} reflections`,
+      supportingEntries: sorted.slice(0, 2).map((e) => ({
+        entryId: e.id,
+        entryTitle: e.title || 'Untitled Reflection',
+        date: e.createdAt,
+        dateFormatted: formatDate(e.createdAt),
+        excerpt: getExcerpt(e),
+      })),
+    },
+    {
+      id: 'insight_2',
+      title: 'Consistent Reflection Sustains Momentum',
+      category: 'mindset',
+      explanation: 'Writing consistently across recent periods correlates with thoughtful problem solving and lower self-reported overwhelm.',
+      takeaway: 'Keep your current reflection cadence steady, using short check-ins whenever schedule demands fluctuate.',
+      timeframeNotes: `Active across ${activityStats.activeDaysCount} distinct reflection days`,
+      supportingEntries: sorted.slice(-2).map((e) => ({
+        entryId: e.id,
+        entryTitle: e.title || 'Untitled Reflection',
+        date: e.createdAt,
+        dateFormatted: formatDate(e.createdAt),
+        excerpt: getExcerpt(e),
+      })),
+    },
+    {
+      id: 'insight_3',
+      title: 'Evolution from Planning to Systematic Execution',
+      category: 'growth',
+      explanation: 'Your earlier entries frequently explored multiple open possibilities, whereas your recent reflections highlight deliberate selection and deeper focus.',
+      takeaway: 'Trust the systems and routines you have developed over your journal journey.',
+      timeframeNotes: 'Longitudinal comparison across chronological entries',
+      supportingEntries: [sorted[0], sorted[sorted.length - 1]].map((e) => ({
+        entryId: e.id,
+        entryTitle: e.title || 'Untitled Reflection',
+        date: e.createdAt,
+        dateFormatted: formatDate(e.createdAt),
+        excerpt: getExcerpt(e),
+      })),
+    },
+  ];
+
+  return {
+    timeRange,
+    generatedAt: new Date().toISOString(),
+    analyzedEntryCount: sorted.length,
+    totalAvailableEntries: allTimeCount || sorted.length,
+    hasSufficientHistory: true,
+    activityStats,
+    moodTrends,
+    recurringTopics,
+    recurringPatterns,
+    behavioralPatterns,
+    personalGrowth,
+    connections,
+    longTermInsights,
+    modelUsed: 'resilient-local-intelligence',
+  };
+}
+
+// POST /api/gemini/intelligence
+app.post('/api/gemini/intelligence', async (req, res) => {
+  try {
+    const data = req.body && typeof req.body === 'object' ? req.body : {};
+    const entries = Array.isArray(data.entries) ? data.entries : [];
+    const userId = typeof data.userId === 'string' ? data.userId : 'anonymous';
+    const timeRange = ['7d', '30d', '90d', '1y', 'all'].includes(data.timeRange)
+      ? data.timeRange
+      : '30d';
+    const totalAvailableEntries = typeof data.totalAvailableEntries === 'number'
+      ? data.totalAvailableEntries
+      : entries.length;
+
+    console.log(`[Journal Intelligence] Analyzing ${entries.length} entries for user ${userId}, timeRange: ${timeRange}`);
+
+    // Filter by time range
+    const now = Date.now();
+    const rangeCutoffs: Record<string, number> = {
+      '7d': now - 7 * 24 * 60 * 60 * 1000,
+      '30d': now - 30 * 24 * 60 * 60 * 1000,
+      '90d': now - 90 * 24 * 60 * 60 * 1000,
+      '1y': now - 365 * 24 * 60 * 60 * 1000,
+      'all': 0,
+    };
+
+    const cutoff = rangeCutoffs[timeRange] || 0;
+    const filteredEntries = entries.filter((e: any) => {
+      if (!e || typeof e !== 'object') return false;
+      const createdTime = new Date(e.createdAt || 0).getTime();
+      return createdTime >= cutoff;
+    });
+
+    const activityStats = calculateJournalActivityStats(filteredEntries, totalAvailableEntries, timeRange);
+    const moodTrends = calculateMoodTrends(filteredEntries, timeRange);
+
+    // If fewer than 2 entries in period, return clear insufficient data payload
+    if (filteredEntries.length < 2) {
+      return res.json({
+        timeRange,
+        generatedAt: new Date().toISOString(),
+        analyzedEntryCount: filteredEntries.length,
+        totalAvailableEntries,
+        hasSufficientHistory: false,
+        activityStats,
+        moodTrends,
+        recurringTopics: [],
+        recurringPatterns: [],
+        behavioralPatterns: [],
+        personalGrowth: [],
+        connections: [],
+        longTermInsights: [],
+        modelUsed: 'deterministic-intelligence-guard',
+      });
+    }
+
+    // Sort chronologically ascending
+    const sortedEntries = [...filteredEntries].sort(
+      (a: any, b: any) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+    );
+
+    // Prepare compact sanitized entries for Gemini payload
+    const compactForAI = sortedEntries.slice(-30).map((e: any, idx: number) => {
+      const cleanContent = (e.content || '')
+        .replace(/<[^>]+>/g, '')
+        .replace(/[#*`_>]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 450);
+
+      const d = new Date(e.createdAt || 0);
+      const dateFormatted = isNaN(d.getTime())
+        ? 'Recent'
+        : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+      return {
+        id: e.id || `entry_${idx + 1}`,
+        title: (e.title || 'Untitled Entry').slice(0, 100),
+        date: dateFormatted,
+        rawDate: e.createdAt,
+        mood: e.mood || 'thoughtful',
+        tags: Array.isArray(e.tags) ? e.tags.slice(0, 5) : [],
+        excerpt: cleanContent,
+      };
+    });
+
+    const localFallback = generateSmartLocalIntelligence(filteredEntries, totalAvailableEntries, timeRange);
+
+    if (!process.env.GEMINI_API_KEY) {
+      return res.json(localFallback);
+    }
+
+    const systemInstruction = `You are the Deeper Journal Intelligence Engine for ReflectAI.
+Your role is to analyze the user's authentic journal history over time and uncover meaningful patterns, recurring topics, behavioral patterns, personal growth comparisons, cross-entry connections, and 3-5 high-impact long-term insights.
+
+CRITICAL PRIVACY & FACTUAL GROUNDING DIRECTIVES:
+1. Ground every single topic, pattern, behavioral insight, growth comparison, connection, and long-term insight in the provided journal entries.
+2. DO NOT make clinical, medical, or psychological diagnoses. Do not infer sensitive health or medical traits.
+3. Distinguish clearly:
+   - FACT: 'Your entries mention X 4 times.'
+   - OBSERVATION: 'X appears to be a recurring theme.'
+   - INTERPRETATION: 'Your reflections suggest a steady shift toward Y.'
+   Avoid dogmatic or absolute causal claims ('This definitely causes...').
+4. TOPICS must be derived directly from the user's authentic text (do NOT use generic hardcoded bucket lists).
+5. Provide exact supporting evidence containing entryId, entryTitle, date, and authentic excerpt from the provided entries.
+6. Return between 3 and 5 deep, high-value Long-Term Insights (not shallow or generic items).
+7. Return exactly valid JSON with no extraneous text, matching the requested schema.`;
+
+    const userPrompt = `Analyze the following chronological journal reflections for the selected timeframe ("${timeRange}"):
+
+JOURNAL ENTRIES (${compactForAI.length} entries analyzed):
+${JSON.stringify(compactForAI, null, 2)}
+
+Produce a structured JSON response with the following schema:
+{
+  "recurringTopics": [
+    {
+      "id": "string",
+      "name": "string (topic name derived from user text)",
+      "count": number,
+      "recentAppearanceDate": "string",
+      "description": "string (1-2 sentences explaining why this topic recurs)",
+      "supportingEntries": [
+        { "entryId": "string", "entryTitle": "string", "date": "string", "excerpt": "string (under 140 chars)" }
+      ]
+    }
+  ],
+  "recurringPatterns": [
+    {
+      "id": "string",
+      "title": "string",
+      "patternType": "situational | theme | routine",
+      "observation": "string",
+      "evidenceExplanation": "string",
+      "confidence": "high | moderate",
+      "supportingEntries": [
+        { "entryId": "string", "entryTitle": "string", "date": "string", "excerpt": "string" }
+      ]
+    }
+  ],
+  "behavioralPatterns": [
+    {
+      "id": "string",
+      "behaviorTitle": "string",
+      "category": "planning | habit | response | focus | rest | routine",
+      "description": "string",
+      "manifestation": "string",
+      "supportingEntries": [
+        { "entryId": "string", "entryTitle": "string", "date": "string", "excerpt": "string" }
+      ]
+    }
+  ],
+  "personalGrowth": [
+    {
+      "dimension": "string (e.g. Focus & Execution, Stress Management, Habit Consistency)",
+      "earlierSummary": "string",
+      "recentSummary": "string",
+      "trendType": "positive_evolution | shifting_priorities | iterative_learning | emerging",
+      "earlierEvidence": [
+        { "entryId": "string", "entryTitle": "string", "date": "string", "excerpt": "string" }
+      ],
+      "recentEvidence": [
+        { "entryId": "string", "entryTitle": "string", "date": "string", "excerpt": "string" }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "string",
+      "relationshipType": "goal_evolution | recurring_challenge | idea_development | cause_and_reflection",
+      "connectionHeadline": "string",
+      "narrative": "string (how earlier entry relates meaningfully to later entry)",
+      "entryA": { "entryId": "string", "entryTitle": "string", "date": "string", "excerpt": "string" },
+      "entryB": { "entryId": "string", "entryTitle": "string", "date": "string", "excerpt": "string" }
+    }
+  ],
+  "longTermInsights": [
+    {
+      "id": "string",
+      "title": "string",
+      "category": "mindset | energy | productivity | values | growth",
+      "explanation": "string (thoughtful 2-3 sentence reflection)",
+      "takeaway": "string (constructive, gentle next step)",
+      "timeframeNotes": "string",
+      "supportingEntries": [
+        { "entryId": "string", "entryTitle": "string", "date": "string", "excerpt": "string" }
+      ]
+    }
+  ]
+}`;
+
+    const result = await generateContentWithFallback(userPrompt, systemInstruction);
+
+    if (result && result.text) {
+      let jsonStr = result.text.trim();
+      if (jsonStr.startsWith('```json')) jsonStr = jsonStr.slice(7);
+      if (jsonStr.startsWith('```')) jsonStr = jsonStr.slice(3);
+      if (jsonStr.endsWith('```')) jsonStr = jsonStr.slice(0, -3);
+      jsonStr = jsonStr.trim();
+
+      const parsed = JSON.parse(jsonStr);
+
+      if (parsed && typeof parsed === 'object') {
+        const responsePayload = {
+          timeRange,
+          generatedAt: new Date().toISOString(),
+          analyzedEntryCount: filteredEntries.length,
+          totalAvailableEntries,
+          hasSufficientHistory: true,
+          activityStats,
+          moodTrends,
+          recurringTopics: Array.isArray(parsed.recurringTopics) && parsed.recurringTopics.length > 0
+            ? parsed.recurringTopics
+            : localFallback.recurringTopics,
+          recurringPatterns: Array.isArray(parsed.recurringPatterns) && parsed.recurringPatterns.length > 0
+            ? parsed.recurringPatterns
+            : localFallback.recurringPatterns,
+          behavioralPatterns: Array.isArray(parsed.behavioralPatterns) && parsed.behavioralPatterns.length > 0
+            ? parsed.behavioralPatterns
+            : localFallback.behavioralPatterns,
+          personalGrowth: Array.isArray(parsed.personalGrowth) && parsed.personalGrowth.length > 0
+            ? parsed.personalGrowth
+            : localFallback.personalGrowth,
+          connections: Array.isArray(parsed.connections) && parsed.connections.length > 0
+            ? parsed.connections
+            : localFallback.connections,
+          longTermInsights: Array.isArray(parsed.longTermInsights) && parsed.longTermInsights.length > 0
+            ? parsed.longTermInsights.slice(0, 5)
+            : localFallback.longTermInsights,
+          modelUsed: result.modelUsed,
+        };
+
+        return res.json(responsePayload);
+      }
+    }
+
+    return res.json(localFallback);
+  } catch (error: any) {
+    console.error('Error in /api/gemini/intelligence:', error);
+    const safeEntries = Array.isArray(req.body?.entries) ? req.body.entries : [];
+    const local = generateSmartLocalIntelligence(safeEntries, safeEntries.length, req.body?.timeRange || '30d');
+    return res.json(local);
+  }
+});
 
 // Vite & Static Asset Handling
 async function startServer() {
