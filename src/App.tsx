@@ -73,22 +73,37 @@ export default function App() {
   // Calculate Streak
   const streakCount = useMemo(() => {
     if (!entries || entries.length === 0) return 0;
-    const dates = new Set(
-      entries.map(e => new Date(e.createdAt).toISOString().split('T')[0])
-    );
+
+    const toDateKey = (dateInput: string | number | Date) => {
+      const d = new Date(dateInput);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+
+    const dates = new Set(entries.map(e => toDateKey(e.createdAt)));
+    
     let count = 0;
     const today = new Date();
-    for (let i = 0; i < 30; i++) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      if (dates.has(dateStr)) {
-        count++;
-      } else if (i > 0) {
-        break;
-      }
+    const todayStr = toDateKey(today);
+    
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const yesterdayStr = toDateKey(yesterday);
+
+    // If no reflection recorded today and none yesterday, the streak is broken
+    if (!dates.has(todayStr) && !dates.has(yesterdayStr)) {
+      return 0;
     }
-    return Math.max(count, 1);
+
+    // Start backwards count from today (if written today) or yesterday (if written yesterday)
+    const startDate = dates.has(todayStr) ? today : yesterday;
+    const checkDate = new Date(startDate);
+
+    while (dates.has(toDateKey(checkDate))) {
+      count++;
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+
+    return count;
   }, [entries]);
 
   const handleAuthenticate = (user: UserProfile) => {

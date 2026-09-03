@@ -83,7 +83,7 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({
   };
 
   return (
-    <aside className="w-full lg:w-80 shrink-0 bg-stone-900/90 border border-stone-800 rounded-2xl p-4 flex flex-col h-full shadow-lg">
+    <aside className="w-full max-w-full min-w-0 lg:w-80 shrink-0 bg-stone-900/90 border border-stone-800 rounded-2xl p-4 flex flex-col h-full shadow-lg">
       {/* Top Section */}
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-1.5">
@@ -119,12 +119,12 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({
       </div>
 
       {/* Mood Filters */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-1 mb-3 scrollbar-none text-[10px]">
+      <div className="w-full max-w-full min-w-0 flex items-center gap-1.5 overflow-x-auto pb-1.5 mb-3 text-[10px] mood-chips-scroll">
         <button
           onClick={() => setSelectedMoodFilter('all')}
-          className={`px-2 py-0.5 rounded-md border shrink-0 transition-colors cursor-pointer ${
+          className={`px-2.5 py-1 rounded-md border shrink-0 whitespace-nowrap transition-colors cursor-pointer ${
             selectedMoodFilter === 'all'
-              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 font-medium'
               : 'bg-stone-950 text-stone-500 border-stone-800 hover:text-stone-300'
           }`}
         >
@@ -134,9 +134,9 @@ export const HistorySidebar: React.FC<HistorySidebarProps> = ({
           <button
             key={m}
             onClick={() => setSelectedMoodFilter(m)}
-            className={`px-2 py-0.5 rounded-md border shrink-0 transition-colors capitalize cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md border shrink-0 whitespace-nowrap transition-colors capitalize cursor-pointer ${
               selectedMoodFilter === m
-                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 font-medium'
                 : 'bg-stone-950 text-stone-500 border-stone-800 hover:text-stone-300'
             }`}
           >

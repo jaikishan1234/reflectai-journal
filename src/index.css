@@ -26,4 +26,24 @@
   .wrapped-scroll:hover::-webkit-scrollbar-thumb {
     background: rgba(168, 162, 158, 0.45);
   }
+
+  .mood-chips-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(168, 162, 158, 0.25) transparent;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  .mood-chips-scroll::-webkit-scrollbar {
+    height: 3px;
+  }
+  .mood-chips-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .mood-chips-scroll::-webkit-scrollbar-thumb {
+    background: rgba(120, 113, 108, 0.3);
+    border-radius: 9999px;
+  }
+  .mood-chips-scroll:hover::-webkit-scrollbar-thumb {
+    background: rgba(245, 158, 11, 0.45);
+  }
 }

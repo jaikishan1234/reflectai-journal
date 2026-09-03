@@ -198,9 +198,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     >
                       <HeartPulse className={`w-4 h-4 mt-0.5 shrink-0 ${activeView === 'wellbeing' ? 'text-rose-400' : 'text-stone-400'}`} />
                       <div>
-                        <div className="text-xs font-semibold flex items-center gap-1.5">
-                          <span>Wellbeing</span>
-                          <span className="text-[9px] bg-rose-500/10 text-rose-400 border border-rose-500/20 px-1.5 py-0.2 rounded-full font-medium">New</span>
+                        <div className="text-xs font-semibold">
+                          Wellbeing
                         </div>
                         <div className="text-[10px] text-stone-400">Workload, focus, and recovery signals</div>
                       </div>
@@ -218,9 +217,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     >
                       <Gift className={`w-4 h-4 mt-0.5 shrink-0 ${activeView === 'wrapped' ? 'text-amber-400' : 'text-stone-400'}`} />
                       <div>
-                        <div className="text-xs font-semibold flex items-center gap-1.5">
-                          <span>Wrapped</span>
-                          <span className="text-[9px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.2 rounded-full font-medium">New</span>
+                        <div className="text-xs font-semibold">
+                          Wrapped
                         </div>
                         <div className="text-[10px] text-stone-400">Milestone story & retrospective</div>
                       </div>
