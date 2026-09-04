@@ -1,10 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <rect width="32" height="32" rx="8" fill="#3282B8" />
-  <g transform="translate(4, 4)" fill="none" stroke="#111416" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-    <path d="M5 3v4"/>
-    <path d="M19 17v4"/>
-    <path d="M3 5h4"/>
-    <path d="M17 19h4"/>
-  </g>
+  <!-- Dark Neutral Rounded Foundation -->
+  <rect width="32" height="32" rx="7" fill="#111416" />
+
+  <!-- Left Journal Page (Writing & Personal Entries) -->
+  <path d="M 6.5 8.5 C 6.5 7.1 7.8 6.2 9.2 6.6 L 14.5 8 C 15.4 8.2 16 9 16 10 V 23.5 C 16 24.5 14.8 25.2 13.8 24.8 L 8.8 23.4 C 7.4 23 6.5 21.7 6.5 20.2 V 8.5 Z" fill="#4FA3D1" />
+
+  <!-- Right Journal Page (Mindful Reflection & Insights) -->
+  <path d="M 25.5 8.5 C 25.5 7.1 24.2 6.2 22.8 6.6 L 17.5 8 C 16.6 8.2 16 9 16 10 V 23.5 C 16 24.5 17.2 25.2 18.2 24.8 L 23.2 23.4 C 24.6 23 25.5 21.7 25.5 20.2 V 8.5 Z" fill="#4FA3D1" />
+
+  <!-- Central Reflection & Insight Beacon -->
+  <circle cx="16" cy="5.5" r="1.5" fill="#BBE1FA" />
 </svg>
