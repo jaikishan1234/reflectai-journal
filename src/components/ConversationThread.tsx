@@ -32,53 +32,71 @@ export const ConversationThread: React.FC<ConversationThreadProps> = ({
   return (
     <div 
       id="journal-conversation-thread"
-      className="w-full bg-stone-900/90 border border-stone-800 rounded-2xl p-4 sm:p-6 shadow-xl mt-6"
+      className="w-full bg-[#1D2328] border border-[#30383F] rounded-2xl p-6 sm:p-8 mt-6 shadow-xs"
     >
-      <div className="flex items-center justify-between pb-3 mb-4 border-b border-stone-800">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-amber-400" />
-          <h4 className="text-sm font-semibold text-stone-200">Continuous Dialogue with Gemini</h4>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-5 mb-5 border-b border-[#30383F]">
+        <div className="flex items-start sm:items-center gap-3 min-w-0">
+          <div className="w-8 h-8 rounded-xl bg-[#3282B8]/10 border border-[#3282B8]/25 text-[#4FA3D1] flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
+            <MessageSquare className="w-4 h-4 text-[#4FA3D1]" />
+          </div>
+          <div className="min-w-0">
+            <h4 className="text-base font-semibold text-[#F4F1EA] tracking-tight">
+              Deeper Dialogue
+            </h4>
+            <p className="text-xs text-[#A7ADB2] mt-0.5">
+              Continue exploring your reflection with personalized follow-up guidance
+            </p>
+          </div>
         </div>
-        <span className="text-[11px] text-stone-500">{messages.length} message{messages.length === 1 ? '' : 's'}</span>
+        {messages.length > 0 && (
+          <span className="text-[11px] font-medium text-[#747C82] bg-[#171B1F] border border-[#30383F] px-2.5 py-1 rounded-full shrink-0 self-start sm:self-center">
+            {messages.length} exchange{messages.length === 1 ? '' : 's'}
+          </span>
+        )}
       </div>
 
       {/* Messages List */}
       {messages.length === 0 ? (
-        <div className="text-center py-6 text-stone-500 text-xs">
-          <Sparkles className="w-6 h-6 mx-auto text-stone-600 mb-2" />
-          <p>Have a question or need to go deeper into your journal entry?</p>
-          <p className="text-[11px] text-stone-600 mt-1">Type below to start a multi-turn conversation with Gemini.</p>
+        <div className="text-center py-8 px-4 bg-[#171B1F] border border-[#30383F] rounded-xl mb-5">
+          <Sparkles className="w-5 h-5 mx-auto text-[#3282B8] mb-2.5" />
+          <p className="text-sm font-medium text-[#F4F1EA]">Deepen your reflection</p>
+          <p className="text-xs text-[#A7ADB2] mt-1 max-w-md mx-auto leading-relaxed">
+            Have a question or want to explore patterns in this entry? Ask below to continue the dialogue with Gemini.
+          </p>
         </div>
       ) : (
-        <div className="space-y-3.5 mb-4 max-h-[400px] overflow-y-auto pr-1">
+        <div className="space-y-4 mb-5 max-h-[420px] overflow-y-auto pr-1">
           {messages.map((msg) => {
             const isUser = msg.role === 'user';
             return (
               <div
                 key={msg.id}
-                className={`flex items-start gap-2.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
+                className={`flex items-start gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
               >
                 <div
-                  className={`w-7 h-7 rounded-lg shrink-0 flex items-center justify-center text-xs font-semibold ${
+                  className={`w-7 h-7 rounded-lg shrink-0 flex items-center justify-center text-xs font-semibold mt-0.5 ${
                     isUser
-                      ? 'bg-amber-500 text-stone-950'
-                      : 'bg-stone-800 text-amber-400 border border-stone-700'
+                      ? 'bg-[#252C32] border border-[#30383F] text-[#A7ADB2]'
+                      : 'bg-[#3282B8]/10 border border-[#3282B8]/25 text-[#4FA3D1]'
                   }`}
                 >
                   {isUser ? <User className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
                 </div>
 
                 <div
-                  className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed ${
+                  className={`max-w-[85%] rounded-2xl px-4 py-3 leading-relaxed text-xs sm:text-sm ${
                     isUser
-                      ? 'bg-amber-500/15 border border-amber-500/30 text-stone-100'
-                      : 'bg-stone-950 border border-stone-800 text-stone-200'
+                      ? 'bg-[#171B1F] border border-[#30383F] border-r-2 border-r-[#3282B8] text-[#F4F1EA]'
+                      : 'bg-[#171B1F] border border-[#30383F] text-[#F4F1EA]'
                   }`}
                 >
-                  <div className="prose prose-invert max-w-none text-xs">
+                  <div className={`text-[11px] mb-1 font-medium ${isUser ? 'text-[#A7ADB2] text-right' : 'text-[#4FA3D1] text-left'}`}>
+                    {isUser ? 'You' : 'Gemini Guidance'}
+                  </div>
+                  <div className="prose prose-invert max-w-none text-xs sm:text-sm text-[#F4F1EA] leading-relaxed prose-p:my-1.5 prose-headings:text-[#F4F1EA] prose-headings:font-semibold prose-strong:text-[#F4F1EA] prose-ul:my-1.5 prose-li:my-0.5 prose-blockquote:border-l-2 prose-blockquote:border-l-[#3282B8] prose-blockquote:text-[#A7ADB2] prose-blockquote:pl-3">
                     <Markdown>{msg.content}</Markdown>
                   </div>
-                  <div className={`text-[9px] mt-1 text-stone-500 ${isUser ? 'text-right' : 'text-left'}`}>
+                  <div className={`text-[10px] mt-2 text-[#747C82] font-mono ${isUser ? 'text-right' : 'text-left'}`}>
                     {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
@@ -87,30 +105,31 @@ export const ConversationThread: React.FC<ConversationThreadProps> = ({
           })}
 
           {isGenerating && (
-            <div className="flex items-center gap-2 text-xs text-amber-400 p-2 bg-stone-950/60 rounded-xl border border-stone-800/80 w-fit">
-              <RotateCw className="w-3.5 h-3.5 animate-spin" />
-              <span>Gemini is thinking...</span>
+            <div className="flex items-center gap-2.5 text-xs text-[#A7ADB2] p-3 bg-[#171B1F] rounded-xl border border-[#30383F] w-fit">
+              <RotateCw className="w-3.5 h-3.5 text-[#3282B8] animate-spin" />
+              <span className="text-[#F4F1EA]">Gemini is reflecting...</span>
             </div>
           )}
         </div>
       )}
 
       {/* Suggested Follow-up Buttons */}
-      <div className="flex flex-wrap gap-1.5 mb-3">
+      <div className="flex flex-wrap gap-2 mb-4">
         {PROMPT_SUGGESTIONS.map((sugg, i) => (
           <button
             key={i}
             onClick={() => onSendMessage(sugg)}
             disabled={isGenerating}
-            className="text-[10px] text-stone-400 hover:text-amber-300 bg-stone-950 hover:bg-stone-850 border border-stone-800 px-2 py-1 rounded-md transition-colors text-left cursor-pointer disabled:opacity-40"
+            className="text-xs text-[#A7ADB2] hover:text-[#F4F1EA] bg-[#171B1F] hover:bg-[#252C32] border border-[#30383F] hover:border-[#424B54] px-3 py-1.5 rounded-lg transition-colors text-left cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            + {sugg}
+            <span className="text-[#3282B8] mr-1.5 font-medium">+</span>
+            {sugg}
           </button>
         ))}
       </div>
 
       {/* Message Input Bar */}
-      <form onSubmit={handleSend} className="flex items-center gap-2">
+      <form onSubmit={handleSend} className="flex items-center gap-2 bg-[#171B1F] border border-[#30383F] focus-within:border-[#3282B8] rounded-xl p-1.5 transition-colors">
         <input
           id="conversation-thread-input"
           type="text"
@@ -118,13 +137,14 @@ export const ConversationThread: React.FC<ConversationThreadProps> = ({
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           disabled={isGenerating}
-          className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3.5 py-2 text-xs text-stone-200 placeholder-stone-600 focus:outline-hidden focus:border-amber-500/50"
+          className="flex-1 bg-transparent px-3 py-2 text-xs sm:text-sm text-[#F4F1EA] placeholder-[#747C82] focus:outline-hidden min-w-0"
         />
         <button
           id="conversation-thread-send-btn"
           type="submit"
           disabled={!inputText.trim() || isGenerating}
-          className="p-2 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl transition-all font-semibold cursor-pointer disabled:opacity-40 shrink-0"
+          className="p-2.5 bg-[#3282B8] hover:bg-[#4FA3D1] text-white rounded-lg transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+          title="Send follow-up"
         >
           <Send className="w-4 h-4" />
         </button>

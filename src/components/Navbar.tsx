@@ -6,15 +6,13 @@ import {
   ShieldCheck,
   Flame,
   BookOpen,
-  PlusCircle,
+  Plus,
   LineChart,
   HelpCircle,
   Compass,
   HeartPulse,
   Gift,
   ChevronDown,
-  Activity,
-  BarChart2,
   Brain
 } from 'lucide-react';
 
@@ -37,14 +35,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSignOut,
   onOpenAuth,
   onNewEntry,
-  onOpenAnalytics,
+  onOpenAnalytics: _onOpenAnalytics,
   onOpenSecurity,
   streakCount,
 }) => {
   const [isInsightsOpen, setIsInsightsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click
+  // Close dropdown on outside click or escape
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -78,244 +76,256 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="w-full bg-stone-900/90 backdrop-blur-md border-b border-stone-800 sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-        {/* Brand & Navigation */}
-        <div className="flex items-center gap-3 sm:gap-6">
-          <div 
-            onClick={() => onViewChange('journal')}
-            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none shrink-0"
-          >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-400 flex items-center justify-center text-stone-950 shadow-md shadow-orange-500/20">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="font-semibold text-stone-100 tracking-tight text-base sm:text-lg">ReflectAI</span>
-                <span className="text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded-full">
-                  Gemini 3.6
-                </span>
-              </div>
-              <p className="text-[10px] sm:text-[11px] text-stone-400 hidden sm:block">Mindful Reflections & Secure Storage</p>
-            </div>
+    <header className="w-full bg-[#111416] border-b border-[#30383F] sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-3 sm:px-5 lg:px-6 h-16 flex items-center justify-between gap-2 md:gap-4">
+        {/* LEFT: Brand Area */}
+        <div 
+          onClick={() => onViewChange('journal')}
+          className="flex items-center gap-2.5 cursor-pointer select-none shrink-0 group"
+          title="ReflectAI - Return to Journal"
+        >
+          <div className="w-8 h-8 rounded-lg bg-[#3282B8]/15 border border-[#3282B8]/30 flex items-center justify-center text-[#4FA3D1] group-hover:border-[#3282B8]/60 transition-colors">
+            <Sparkles className="w-4 h-4" />
           </div>
-
-          {/* Primary View Switcher */}
-          {user && (
-            <nav className="flex items-center bg-stone-950/80 p-1 rounded-xl border border-stone-800">
-              {/* Journal */}
-              <button
-                id="nav-tab-journal"
-                onClick={() => onViewChange('journal')}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  activeView === 'journal'
-                    ? 'bg-stone-800 text-amber-400 shadow-xs border border-stone-700'
-                    : 'text-stone-400 hover:text-stone-200'
-                }`}
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                <span>Journal</span>
-              </button>
-
-              {/* Journal Intelligence (Feature 8) */}
-              <button
-                id="nav-tab-intelligence"
-                onClick={() => onViewChange('intelligence')}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  activeView === 'intelligence'
-                    ? 'bg-stone-800 text-amber-400 shadow-xs border border-stone-700'
-                    : 'text-stone-400 hover:text-stone-200'
-                }`}
-              >
-                <Brain className="w-3.5 h-3.5" />
-                <span>Intelligence</span>
-              </button>
-
-              {/* Personal Insights Dropdown */}
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  id="nav-tab-insights-dropdown"
-                  onClick={() => setIsInsightsOpen(!isInsightsOpen)}
-                  aria-expanded={isInsightsOpen}
-                  aria-haspopup="true"
-                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    isInsightsActive
-                      ? 'bg-stone-800 text-amber-400 shadow-xs border border-stone-700'
-                      : 'text-stone-400 hover:text-stone-200'
-                  }`}
-                >
-                  <LineChart className="w-3.5 h-3.5" />
-                  <span>Personal Insights</span>
-                  <ChevronDown className={`w-3 h-3 text-stone-400 transition-transform duration-200 ${isInsightsOpen ? 'rotate-180 text-amber-400' : ''}`} />
-                </button>
-
-                {/* Dropdown Menu */}
-                {isInsightsOpen && (
-                  <div className="absolute left-0 mt-1.5 w-60 sm:w-64 bg-stone-900 border border-stone-800 rounded-2xl shadow-xl shadow-stone-950/80 p-1.5 z-50 animate-fadeIn">
-                    {/* Insights Overview */}
-                    <button
-                      id="dropdown-insights-overview"
-                      onClick={() => handleSelectInsightView('insights')}
-                      className={`w-full flex items-start gap-2.5 px-3 py-2 rounded-xl text-left transition-colors cursor-pointer ${
-                        activeView === 'insights'
-                          ? 'bg-stone-800/90 text-amber-400'
-                          : 'text-stone-300 hover:bg-stone-800/60 hover:text-stone-100'
-                      }`}
-                    >
-                      <LineChart className={`w-4 h-4 mt-0.5 shrink-0 ${activeView === 'insights' ? 'text-amber-400' : 'text-stone-400'}`} />
-                      <div>
-                        <div className="text-xs font-semibold">Overview</div>
-                        <div className="text-[10px] text-stone-400">Themes, mood analysis, and patterns</div>
-                      </div>
-                    </button>
-
-                    {/* Your Story */}
-                    <button
-                      id="dropdown-your-story"
-                      onClick={() => handleSelectInsightView('story')}
-                      className={`w-full flex items-start gap-2.5 px-3 py-2 rounded-xl text-left transition-colors cursor-pointer ${
-                        activeView === 'story'
-                          ? 'bg-stone-800/90 text-amber-400'
-                          : 'text-stone-300 hover:bg-stone-800/60 hover:text-stone-100'
-                      }`}
-                    >
-                      <Compass className={`w-4 h-4 mt-0.5 shrink-0 ${activeView === 'story' ? 'text-amber-400' : 'text-stone-400'}`} />
-                      <div>
-                        <div className="text-xs font-semibold">Your Story</div>
-                        <div className="text-[10px] text-stone-400">Chronological journey and change tracking</div>
-                      </div>
-                    </button>
-
-                    {/* Wellbeing */}
-                    <button
-                      id="dropdown-wellbeing"
-                      onClick={() => handleSelectInsightView('wellbeing')}
-                      className={`w-full flex items-start gap-2.5 px-3 py-2 rounded-xl text-left transition-colors cursor-pointer ${
-                        activeView === 'wellbeing'
-                          ? 'bg-stone-800/90 text-amber-400'
-                          : 'text-stone-300 hover:bg-stone-800/60 hover:text-stone-100'
-                      }`}
-                    >
-                      <HeartPulse className={`w-4 h-4 mt-0.5 shrink-0 ${activeView === 'wellbeing' ? 'text-rose-400' : 'text-stone-400'}`} />
-                      <div>
-                        <div className="text-xs font-semibold">
-                          Wellbeing
-                        </div>
-                        <div className="text-[10px] text-stone-400">Workload, focus, and recovery signals</div>
-                      </div>
-                    </button>
-
-                    {/* Wrapped */}
-                    <button
-                      id="dropdown-wrapped"
-                      onClick={() => handleSelectInsightView('wrapped')}
-                      className={`w-full flex items-start gap-2.5 px-3 py-2 rounded-xl text-left transition-colors cursor-pointer ${
-                        activeView === 'wrapped'
-                          ? 'bg-stone-800/90 text-amber-400'
-                          : 'text-stone-300 hover:bg-stone-800/60 hover:text-stone-100'
-                      }`}
-                    >
-                      <Gift className={`w-4 h-4 mt-0.5 shrink-0 ${activeView === 'wrapped' ? 'text-amber-400' : 'text-stone-400'}`} />
-                      <div>
-                        <div className="text-xs font-semibold">
-                          Wrapped
-                        </div>
-                        <div className="text-[10px] text-stone-400">Milestone story & retrospective</div>
-                      </div>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Ask My Journal */}
-              <button
-                id="nav-tab-ask-journal"
-                onClick={() => onViewChange('ask_journal')}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  activeView === 'ask_journal'
-                    ? 'bg-stone-800 text-amber-400 shadow-xs border border-stone-700'
-                    : 'text-stone-400 hover:text-stone-200'
-                }`}
-              >
-                <HelpCircle className="w-3.5 h-3.5" />
-                <span>Ask My Journal</span>
-              </button>
-            </nav>
-          )}
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-semibold text-[#F4F1EA] tracking-tight text-base sm:text-lg">ReflectAI</span>
+              <span className="text-[10px] font-medium text-[#747C82] border border-[#30383F] bg-[#171B1F] px-1.5 py-0.5 rounded-md">
+                Gemini 3.6
+              </span>
+            </div>
+            <p className="text-[11px] text-[#A7ADB2] hidden sm:block leading-tight">Mindful Reflections & Secure Storage</p>
+          </div>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* CENTER: Main Navigation */}
+        {user && (
+          <nav className="flex items-center gap-1.5 sm:gap-2.5 lg:gap-3.5 py-1">
+            {/* Journal - Primary destination */}
+            <button
+              id="nav-tab-journal"
+              type="button"
+              onClick={() => onViewChange('journal')}
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                activeView === 'journal'
+                  ? 'bg-[#3282B8] text-white font-semibold shadow-xs'
+                  : 'text-[#A7ADB2] hover:text-[#F4F1EA] hover:bg-[#171B1F]'
+              }`}
+            >
+              <BookOpen className={`w-3.5 h-3.5 ${activeView === 'journal' ? 'text-white' : 'text-[#747C82]'}`} />
+              <span>Journal</span>
+            </button>
+
+            {/* Intelligence */}
+            <button
+              id="nav-tab-intelligence"
+              type="button"
+              onClick={() => onViewChange('intelligence')}
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                activeView === 'intelligence'
+                  ? 'bg-[#3282B8] text-white font-semibold shadow-xs'
+                  : 'text-[#A7ADB2] hover:text-[#F4F1EA] hover:bg-[#171B1F]'
+              }`}
+            >
+              <Brain className={`w-3.5 h-3.5 ${activeView === 'intelligence' ? 'text-white' : 'text-[#747C82]'}`} />
+              <span>Intelligence</span>
+            </button>
+
+            {/* Personal Insights Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                id="nav-tab-insights-dropdown"
+                type="button"
+                onClick={() => setIsInsightsOpen(prev => !prev)}
+                aria-expanded={isInsightsOpen}
+                aria-haspopup="true"
+                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  isInsightsActive
+                    ? 'bg-[#3282B8] text-white font-semibold shadow-xs'
+                    : isInsightsOpen
+                    ? 'bg-[#171B1F] text-[#F4F1EA]'
+                    : 'text-[#A7ADB2] hover:text-[#F4F1EA] hover:bg-[#171B1F]'
+                }`}
+              >
+                <LineChart className={`w-3.5 h-3.5 ${isInsightsActive ? 'text-white' : isInsightsOpen ? 'text-[#F4F1EA]' : 'text-[#747C82]'}`} />
+                <span>Personal Insights</span>
+                <ChevronDown className={`w-3 h-3 transition-transform duration-150 ${isInsightsOpen ? 'rotate-180' : ''} ${isInsightsActive ? 'text-white' : isInsightsOpen ? 'text-[#F4F1EA]' : 'text-[#747C82]'}`} />
+              </button>
+
+              {/* Dropdown Menu */}
+              {isInsightsOpen && (
+                <div className="absolute left-0 top-full mt-1.5 w-64 bg-[#1D2328] border border-[#30383F] rounded-xl shadow-2xl shadow-black/80 p-1.5 z-50">
+                  {/* Insights Overview */}
+                  <button
+                    id="dropdown-insights-overview"
+                    type="button"
+                    onClick={() => handleSelectInsightView('insights')}
+                    className={`w-full flex items-start gap-2.5 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer ${
+                      activeView === 'insights'
+                        ? 'bg-[#252C32] text-[#4FA3D1]'
+                        : 'text-[#F4F1EA] hover:bg-[#252C32]/70'
+                    }`}
+                  >
+                    <LineChart className={`w-4 h-4 mt-0.5 shrink-0 ${activeView === 'insights' ? 'text-[#4FA3D1]' : 'text-[#747C82]'}`} />
+                    <div>
+                      <div className="text-xs font-medium text-[#F4F1EA]">Overview</div>
+                      <div className="text-[11px] text-[#A7ADB2]">Themes, mood analysis, and patterns</div>
+                    </div>
+                  </button>
+
+                  {/* Your Story */}
+                  <button
+                    id="dropdown-your-story"
+                    type="button"
+                    onClick={() => handleSelectInsightView('story')}
+                    className={`w-full flex items-start gap-2.5 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer ${
+                      activeView === 'story'
+                        ? 'bg-[#252C32] text-[#4FA3D1]'
+                        : 'text-[#F4F1EA] hover:bg-[#252C32]/70'
+                    }`}
+                  >
+                    <Compass className={`w-4 h-4 mt-0.5 shrink-0 ${activeView === 'story' ? 'text-[#4FA3D1]' : 'text-[#747C82]'}`} />
+                    <div>
+                      <div className="text-xs font-medium text-[#F4F1EA]">Your Story</div>
+                      <div className="text-[11px] text-[#A7ADB2]">Chronological journey and change tracking</div>
+                    </div>
+                  </button>
+
+                  {/* Wellbeing */}
+                  <button
+                    id="dropdown-wellbeing"
+                    type="button"
+                    onClick={() => handleSelectInsightView('wellbeing')}
+                    className={`w-full flex items-start gap-2.5 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer ${
+                      activeView === 'wellbeing'
+                        ? 'bg-[#252C32] text-[#4FA3D1]'
+                        : 'text-[#F4F1EA] hover:bg-[#252C32]/70'
+                    }`}
+                  >
+                    <HeartPulse className={`w-4 h-4 mt-0.5 shrink-0 ${activeView === 'wellbeing' ? 'text-[#4FA3D1]' : 'text-[#747C82]'}`} />
+                    <div>
+                      <div className="text-xs font-medium text-[#F4F1EA]">Wellbeing</div>
+                      <div className="text-[11px] text-[#A7ADB2]">Workload, focus, and recovery signals</div>
+                    </div>
+                  </button>
+
+                  {/* Wrapped */}
+                  <button
+                    id="dropdown-wrapped"
+                    type="button"
+                    onClick={() => handleSelectInsightView('wrapped')}
+                    className={`w-full flex items-start gap-2.5 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer ${
+                      activeView === 'wrapped'
+                        ? 'bg-[#252C32] text-[#4FA3D1]'
+                        : 'text-[#F4F1EA] hover:bg-[#252C32]/70'
+                    }`}
+                  >
+                    <Gift className={`w-4 h-4 mt-0.5 shrink-0 ${activeView === 'wrapped' ? 'text-[#4FA3D1]' : 'text-[#747C82]'}`} />
+                    <div>
+                      <div className="text-xs font-medium text-[#F4F1EA]">Wrapped</div>
+                      <div className="text-[11px] text-[#A7ADB2]">Milestone story & retrospective</div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Ask My Journal */}
+            <button
+              id="nav-tab-ask-journal"
+              type="button"
+              onClick={() => onViewChange('ask_journal')}
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                activeView === 'ask_journal'
+                  ? 'bg-[#3282B8] text-white font-semibold shadow-xs'
+                  : 'text-[#A7ADB2] hover:text-[#F4F1EA] hover:bg-[#171B1F]'
+              }`}
+            >
+              <HelpCircle className={`w-3.5 h-3.5 ${activeView === 'ask_journal' ? 'text-white' : 'text-[#747C82]'}`} />
+              <span>Ask My Journal</span>
+            </button>
+          </nav>
+        )}
+
+        {/* RIGHT: Actions & Utilities */}
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           {user && (
             <>
-              {/* Streak Badge */}
+              {/* Streak Indicator - Subtle, compact secondary status indicator */}
               <div 
                 id="streak-indicator"
-                className="flex items-center gap-1.5 px-2.5 py-1 bg-stone-800/80 border border-stone-700/60 rounded-lg text-xs font-medium text-stone-300"
+                className="flex items-center gap-1.5 px-2.5 py-1 bg-[#171B1F] border border-[#30383F] rounded-lg text-xs font-medium text-[#A7ADB2]"
                 title="Current Reflection Streak"
               >
-                <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-400/20 animate-pulse" />
-                <span className="hidden xs:inline">{streakCount} {streakCount === 1 ? 'Day' : 'Days'}</span>
-                <span className="xs:hidden">{streakCount}d</span>
+                <Flame className="w-3.5 h-3.5 text-[#3282B8]" />
+                <span className="text-[#F4F1EA] font-medium">{streakCount}d</span>
               </div>
 
-              {/* New Entry Button */}
+              {/* New Entry Button - Main CTA, compact button displaying + New Entry */}
               <button
                 id="navbar-new-entry-btn"
+                type="button"
                 onClick={() => {
                   onNewEntry();
                   onViewChange('journal');
                 }}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-medium text-xs rounded-lg transition-all shadow-sm active:scale-95 cursor-pointer"
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-[#3282B8] hover:bg-[#4FA3D1] text-white font-medium text-xs rounded-lg transition-colors shadow-xs active:scale-95 cursor-pointer shrink-0"
+                title="Create New Journal Entry"
               >
-                <PlusCircle className="w-4 h-4" />
-                <span>New Entry</span>
+                <Plus className="w-3.5 h-3.5 text-white shrink-0" />
+                <span className="whitespace-nowrap">New Entry</span>
               </button>
             </>
           )}
 
-          {/* Security & Deployment Docs */}
+          {/* Subtle Vertical Divider */}
+          <div className="h-4 w-px bg-[#30383F] hidden sm:block" />
+
+          {/* Security Architecture - Secondary Utility */}
           <button
             id="navbar-security-btn"
+            type="button"
             onClick={onOpenSecurity}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-stone-400 hover:text-emerald-400 hover:bg-stone-800/80 border border-stone-800 rounded-lg transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[#747C82] hover:text-[#A7ADB2] hover:bg-[#1D2328] rounded-lg transition-colors cursor-pointer"
             title="View Security Model & Cloud Architecture"
           >
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden md:inline">Security Architecture</span>
+            <ShieldCheck className="w-3.5 h-3.5 text-[#747C82]" />
+            <span className="hidden xl:inline">Security Architecture</span>
           </button>
 
           {/* User Account / Sign In */}
           {user ? (
-            <div className="flex items-center gap-2 pl-2 border-l border-stone-800">
+            <div className="flex items-center gap-2 pl-1 sm:pl-1.5">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-stone-700 border border-stone-600 flex items-center justify-center text-xs font-semibold text-stone-200 overflow-hidden">
+                <div className="w-7 h-7 rounded-full bg-[#252C32] border border-[#30383F] flex items-center justify-center text-xs font-medium text-[#F4F1EA] overflow-hidden">
                   {user.photoURL ? (
-                    <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
+                    <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
                     user.displayName.charAt(0).toUpperCase()
                   )}
                 </div>
                 <div className="hidden lg:block text-left leading-tight">
-                  <div className="text-xs font-medium text-stone-200 truncate max-w-[110px]">{user.displayName}</div>
-                  <div className="text-[10px] text-stone-400 truncate max-w-[110px]">{user.email}</div>
+                  <div className="text-xs font-medium text-[#F4F1EA] truncate max-w-[100px]">{user.displayName}</div>
+                  <div className="text-[10px] text-[#747C82] truncate max-w-[100px]">{user.email}</div>
                 </div>
               </div>
 
               <button
                 id="signout-button"
+                type="button"
                 onClick={onSignOut}
-                className="p-2 text-stone-400 hover:text-rose-400 hover:bg-stone-800 rounded-lg transition-colors cursor-pointer"
+                className="p-1.5 text-[#747C82] hover:text-[#F4F1EA] hover:bg-[#1D2328] rounded-lg transition-colors cursor-pointer"
                 title="Sign Out"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
               </button>
             </div>
           ) : (
             <button
               id="navbar-signin-btn"
+              type="button"
               onClick={onOpenAuth}
-              className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-semibold text-xs rounded-lg transition-all shadow-sm active:scale-95 cursor-pointer"
+              className="px-3.5 py-1.5 bg-[#3282B8] hover:bg-[#4FA3D1] text-white font-medium text-xs rounded-lg transition-colors shadow-xs active:scale-95 cursor-pointer"
             >
               Sign In
             </button>

@@ -14,12 +14,12 @@ interface JournalEditorProps {
 }
 
 const MOOD_OPTIONS = [
-  { value: 'thoughtful', label: 'Thoughtful 💭', color: 'border-blue-500/40 bg-blue-500/10 text-blue-300' },
-  { value: 'motivated', label: 'Motivated 🚀', color: 'border-amber-500/40 bg-amber-500/10 text-amber-300' },
-  { value: 'peaceful', label: 'Peaceful 🌿', color: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300' },
-  { value: 'energized', label: 'Energized ⚡', color: 'border-yellow-500/40 bg-yellow-500/10 text-yellow-300' },
-  { value: 'anxious', label: 'Anxious 🌧️', color: 'border-purple-500/40 bg-purple-500/10 text-purple-300' },
-  { value: 'overwhelmed', label: 'Overwhelmed 🌪️', color: 'border-rose-500/40 bg-rose-500/10 text-rose-300' },
+  { value: 'thoughtful', label: 'Thoughtful 💭', color: 'border-[#3282B8]/50 bg-[#3282B8]/15 text-[#4FA3D1]' },
+  { value: 'motivated', label: 'Motivated 🚀', color: 'border-amber-500/40 bg-amber-500/10 text-amber-200' },
+  { value: 'peaceful', label: 'Peaceful 🌿', color: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200' },
+  { value: 'energized', label: 'Energized ⚡', color: 'border-sky-500/40 bg-sky-500/10 text-sky-200' },
+  { value: 'anxious', label: 'Anxious 🌧️', color: 'border-indigo-500/40 bg-indigo-500/10 text-indigo-200' },
+  { value: 'overwhelmed', label: 'Overwhelmed 🌪️', color: 'border-rose-500/40 bg-rose-500/10 text-rose-200' },
 ] as const;
 
 const REFLECTION_MODES: Array<{ id: ReflectionMode; label: string; icon: string; desc: string }> = [
@@ -578,7 +578,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
   const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
 
   return (
-    <div className="w-full bg-stone-900/90 border border-stone-800 rounded-2xl p-4 sm:p-6 shadow-xl relative">
+    <div className="w-full bg-[#171B1F] border border-[#252C32] rounded-2xl p-5 sm:p-7 shadow-xs relative">
       {/* Hidden File Input for Photo Picker */}
       <input
         ref={fileInputRef}
@@ -651,16 +651,18 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
         </div>
       )}
 
-      {/* Top Bar: Title, Add Context & Save Indicator */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-        <input
-          id="journal-entry-title-input"
-          type="text"
-          placeholder="Entry Title (e.g. Navigating team priorities & finding balance)"
-          value={title}
-          onChange={(e) => handleTitleChange(e.target.value)}
-          className="text-lg sm:text-xl font-bold bg-transparent text-stone-100 placeholder-stone-600 focus:outline-hidden w-full"
-        />
+      {/* Top Bar: Editorial Title, Add Context & Save Indicator */}
+      <div className="flex items-center justify-between gap-3 sm:gap-4 mb-5 pb-1 min-w-0">
+        <div className="flex-1 min-w-0">
+          <input
+            id="journal-entry-title-input"
+            type="text"
+            placeholder="Entry Title (e.g. Navigating team priorities & finding balance)"
+            value={title}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            className="text-xl sm:text-2xl font-semibold bg-transparent text-[#F4F1EA] placeholder-[#747C82] focus:outline-hidden border-b border-transparent focus:border-[#30383F] pb-1 transition-colors w-full min-w-0 truncate"
+          />
+        </div>
 
         <div className="flex items-center gap-2 shrink-0">
           {/* Add Context Action */}
@@ -668,15 +670,15 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
             <button
               id="journal-add-context-btn"
               onClick={() => setIsContextMenuOpen(!isContextMenuOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-stone-800 bg-stone-950 text-stone-300 hover:text-amber-300 hover:border-amber-500/30 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[#30383F] bg-[#1D2328] text-[#A7ADB2] hover:text-[#F4F1EA] hover:border-[#424B54] transition-colors cursor-pointer"
               title="Attach external context to this reflection"
             >
-              <Plus className="w-3.5 h-3.5 text-amber-400" />
+              <Plus className="w-3.5 h-3.5 text-[#3282B8]" />
               <span>Add Context</span>
             </button>
 
             {isContextMenuOpen && (
-              <div className="absolute right-0 mt-1.5 w-52 bg-stone-900 border border-stone-800 rounded-xl shadow-2xl z-30 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute right-0 mt-1.5 w-52 bg-[#1D2328] border border-[#30383F] rounded-xl shadow-xl z-30 py-1 overflow-hidden animate-in fade-in duration-100">
                 <button
                   id="add-youtube-context-option"
                   onClick={() => {
@@ -684,12 +686,12 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                     setShowWebLinkInput(false);
                     setIsContextMenuOpen(false);
                   }}
-                  className="w-full px-3 py-2 text-left text-xs text-stone-200 hover:bg-stone-800/80 flex items-center gap-2 transition-colors cursor-pointer border-b border-stone-800/60"
+                  className="w-full px-3 py-2 text-left text-xs text-[#F4F1EA] hover:bg-[#252C32] flex items-center gap-2 transition-colors cursor-pointer border-b border-[#252C32]"
                 >
                   <Video className="w-4 h-4 text-red-400 shrink-0" />
                   <div>
-                    <div className="font-semibold">YouTube Video</div>
-                    <div className="text-[10px] text-stone-400">Attach video context</div>
+                    <div className="font-semibold text-[#F4F1EA]">YouTube Video</div>
+                    <div className="text-[10px] text-[#747C82]">Attach video context</div>
                   </div>
                 </button>
 
@@ -700,12 +702,12 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                     setShowYoutubeInput(false);
                     setIsContextMenuOpen(false);
                   }}
-                  className="w-full px-3 py-2 text-left text-xs text-stone-200 hover:bg-stone-800/80 flex items-center gap-2 transition-colors cursor-pointer border-b border-stone-800/60"
+                  className="w-full px-3 py-2 text-left text-xs text-[#F4F1EA] hover:bg-[#252C32] flex items-center gap-2 transition-colors cursor-pointer border-b border-[#252C32]"
                 >
                   <LinkIcon className="w-4 h-4 text-cyan-400 shrink-0" />
                   <div>
-                    <div className="font-semibold">Web Link</div>
-                    <div className="text-[10px] text-stone-400">Attach article or webpage</div>
+                    <div className="font-semibold text-[#F4F1EA]">Web Link</div>
+                    <div className="text-[10px] text-[#747C82]">Attach article or webpage</div>
                   </div>
                 </button>
 
@@ -716,12 +718,12 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                     setPhotoError(null);
                     fileInputRef.current?.click();
                   }}
-                  className="w-full px-3 py-2 text-left text-xs text-stone-200 hover:bg-stone-800/80 flex items-center gap-2 transition-colors cursor-pointer border-b border-stone-800/60"
+                  className="w-full px-3 py-2 text-left text-xs text-[#F4F1EA] hover:bg-[#252C32] flex items-center gap-2 transition-colors cursor-pointer border-b border-[#252C32]"
                 >
                   <ImageIcon className="w-4 h-4 text-amber-400 shrink-0" />
                   <div>
-                    <div className="font-semibold">Photo</div>
-                    <div className="text-[10px] text-stone-400">Attach visual memory</div>
+                    <div className="font-semibold text-[#F4F1EA]">Photo</div>
+                    <div className="text-[10px] text-[#747C82]">Attach visual memory</div>
                   </div>
                 </button>
 
@@ -732,12 +734,12 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                     setFileError(null);
                     docInputRef.current?.click();
                   }}
-                  className="w-full px-3 py-2 text-left text-xs text-stone-200 hover:bg-stone-800/80 flex items-center gap-2 transition-colors cursor-pointer border-b border-stone-800/60"
+                  className="w-full px-3 py-2 text-left text-xs text-[#F4F1EA] hover:bg-[#252C32] flex items-center gap-2 transition-colors cursor-pointer border-b border-[#252C32]"
                 >
                   <FileText className="w-4 h-4 text-emerald-400 shrink-0" />
                   <div>
-                    <div className="font-semibold">File / Document</div>
-                    <div className="text-[10px] text-stone-400">Attach PDF, DOC, TXT, MD</div>
+                    <div className="font-semibold text-[#F4F1EA]">File / Document</div>
+                    <div className="text-[10px] text-[#747C82]">Attach PDF, DOC, TXT, MD</div>
                   </div>
                 </button>
 
@@ -749,12 +751,12 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                     setShowWebLinkInput(false);
                     setIsContextMenuOpen(false);
                   }}
-                  className="w-full px-3 py-2 text-left text-xs text-stone-200 hover:bg-stone-800/80 flex items-center gap-2 transition-colors cursor-pointer"
+                  className="w-full px-3 py-2 text-left text-xs text-[#F4F1EA] hover:bg-[#252C32] flex items-center gap-2 transition-colors cursor-pointer"
                 >
                   <Music className="w-4 h-4 text-emerald-400 shrink-0" />
                   <div>
-                    <div className="font-semibold">Spotify / Music</div>
-                    <div className="text-[10px] text-stone-400">Attach song or track context</div>
+                    <div className="font-semibold text-[#F4F1EA]">Spotify / Music</div>
+                    <div className="text-[10px] text-[#747C82]">Attach song or track context</div>
                   </div>
                 </button>
               </div>
@@ -765,10 +767,10 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
           <button
             id="journal-save-button"
             onClick={handleSaveOnly}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
               hasUnsavedChanges
-                ? 'bg-stone-800 text-amber-300 border-amber-500/40 hover:bg-stone-750'
-                : 'bg-stone-950 text-stone-400 border-stone-800 hover:text-stone-300'
+                ? 'bg-[#1D2328] text-[#4FA3D1] border-[#3282B8]/40 hover:bg-[#252C32]'
+                : 'bg-[#171B1F] text-[#747C82] border-[#30383F] hover:text-[#A7ADB2]'
             }`}
           >
             <Save className="w-3.5 h-3.5" />
@@ -779,9 +781,9 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
 
       {/* YouTube URL Input Form Drawer */}
       {showYoutubeInput && !youtubeAttachment && (
-        <div className="mb-4 p-3.5 bg-stone-950/90 border border-amber-500/30 rounded-xl animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="mb-4 p-3.5 bg-[#1D2328] border border-[#30383F] rounded-xl animate-in fade-in duration-150">
           <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-300">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#F4F1EA]">
               <Video className="w-4 h-4 text-red-400" />
               <span>Attach YouTube Video Context</span>
             </div>
@@ -790,13 +792,13 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                 setShowYoutubeInput(false);
                 setYoutubeError(null);
               }}
-              className="text-stone-400 hover:text-stone-200 text-xs p-1"
+              className="text-[#747C82] hover:text-[#F4F1EA] text-xs p-1 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <p className="text-[11px] text-stone-400 mb-2.5">
+          <p className="text-[11px] text-[#A7ADB2] mb-2.5">
             Connect a video you watched to ground your journal reflection. The journal reflection remains your primary source of truth.
           </p>
 
@@ -816,13 +818,13 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                   handleFetchYoutubeMetadata();
                 }
               }}
-              className="w-full bg-stone-900 border border-stone-800 rounded-lg px-3 py-1.5 text-xs text-stone-200 placeholder-stone-600 focus:outline-hidden focus:border-amber-500/50"
+              className="w-full bg-[#14181B] border border-[#30383F] rounded-lg px-3 py-1.5 text-xs text-[#F4F1EA] placeholder-[#747C82] focus:outline-hidden focus:border-[#3282B8]"
             />
             <button
               id="attach-youtube-btn"
               onClick={handleFetchYoutubeMetadata}
               disabled={isLoadingYoutube || !youtubeUrlInput.trim()}
-              className="px-4 py-1.5 bg-red-600 hover:bg-red-500 text-white font-semibold text-xs rounded-lg transition-colors cursor-pointer disabled:opacity-40 shrink-0 flex items-center justify-center gap-1.5"
+              className="px-4 py-1.5 bg-[#3282B8] hover:bg-[#4FA3D1] text-white font-medium text-xs rounded-lg transition-colors cursor-pointer disabled:opacity-40 shrink-0 flex items-center justify-center gap-1.5"
             >
               {isLoadingYoutube ? (
                 <>
@@ -846,9 +848,9 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
 
       {/* Spotify URL Input Form Drawer */}
       {showSpotifyInput && !spotifyAttachment && (
-        <div className="mb-4 p-3.5 bg-stone-950/90 border border-emerald-500/30 rounded-xl animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="mb-4 p-3.5 bg-[#1D2328] border border-[#30383F] rounded-xl animate-in fade-in duration-150">
           <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-300">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#F4F1EA]">
               <Music className="w-4 h-4 text-emerald-400" />
               <span>Attach Spotify / Music Context</span>
             </div>
@@ -857,13 +859,13 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                 setShowSpotifyInput(false);
                 setSpotifyError(null);
               }}
-              className="text-stone-400 hover:text-stone-200 text-xs p-1 cursor-pointer"
+              className="text-[#747C82] hover:text-[#F4F1EA] text-xs p-1 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <p className="text-[11px] text-stone-400 mb-2.5">
+          <p className="text-[11px] text-[#A7ADB2] mb-2.5">
             Connect a song that accompanied your thoughts or captures your mood. Your reflection remains the central focus.
           </p>
 
@@ -883,17 +885,17 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                   handleFetchSpotifyMetadata();
                 }
               }}
-              className="w-full bg-stone-900 border border-stone-800 rounded-lg px-3 py-1.5 text-xs text-stone-200 placeholder-stone-600 focus:outline-hidden focus:border-emerald-500/50"
+              className="w-full bg-[#14181B] border border-[#30383F] rounded-lg px-3 py-1.5 text-xs text-[#F4F1EA] placeholder-[#747C82] focus:outline-hidden focus:border-[#3282B8]"
             />
             <button
               id="attach-spotify-btn"
               onClick={handleFetchSpotifyMetadata}
               disabled={isLoadingSpotify || !spotifyUrlInput.trim()}
-              className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-semibold text-xs rounded-lg transition-colors cursor-pointer disabled:opacity-40 shrink-0 flex items-center justify-center gap-1.5"
+              className="px-4 py-1.5 bg-[#3282B8] hover:bg-[#4FA3D1] text-white font-medium text-xs rounded-lg transition-colors cursor-pointer disabled:opacity-40 shrink-0 flex items-center justify-center gap-1.5"
             >
               {isLoadingSpotify ? (
                 <>
-                  <RotateCw className="w-3.5 h-3.5 animate-spin text-stone-950" />
+                  <RotateCw className="w-3.5 h-3.5 animate-spin text-white" />
                   <span>Fetching...</span>
                 </>
               ) : (
@@ -913,9 +915,9 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
 
       {/* Web Link URL Input Form Drawer */}
       {showWebLinkInput && !webLinkAttachment && (
-        <div className="mb-4 p-3.5 bg-stone-950/90 border border-cyan-500/30 rounded-xl animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="mb-4 p-3.5 bg-[#1D2328] border border-[#30383F] rounded-xl animate-in fade-in duration-150">
           <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-cyan-300">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#F4F1EA]">
               <LinkIcon className="w-4 h-4 text-cyan-400" />
               <span>Attach Web Link Context</span>
             </div>
@@ -924,13 +926,13 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                 setShowWebLinkInput(false);
                 setWebLinkError(null);
               }}
-              className="text-stone-400 hover:text-stone-200 text-xs p-1"
+              className="text-[#747C82] hover:text-[#F4F1EA] text-xs p-1 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <p className="text-[11px] text-stone-400 mb-2.5">
+          <p className="text-[11px] text-[#A7ADB2] mb-2.5">
             Attach an article, documentation page, or tutorial you read to enrich your personal reflection. Your reflections remain the central focus.
           </p>
 
@@ -950,13 +952,13 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                   handleFetchWebLinkMetadata();
                 }
               }}
-              className="w-full bg-stone-900 border border-stone-800 rounded-lg px-3 py-1.5 text-xs text-stone-200 placeholder-stone-600 focus:outline-hidden focus:border-cyan-500/50"
+              className="w-full bg-[#14181B] border border-[#30383F] rounded-lg px-3 py-1.5 text-xs text-[#F4F1EA] placeholder-[#747C82] focus:outline-hidden focus:border-[#3282B8]"
             />
             <button
               id="attach-weblink-btn"
               onClick={handleFetchWebLinkMetadata}
               disabled={isLoadingWebLink || !webUrlInput.trim()}
-              className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs rounded-lg transition-colors cursor-pointer disabled:opacity-40 shrink-0 flex items-center justify-center gap-1.5"
+              className="px-4 py-1.5 bg-[#3282B8] hover:bg-[#4FA3D1] text-white font-medium text-xs rounded-lg transition-colors cursor-pointer disabled:opacity-40 shrink-0 flex items-center justify-center gap-1.5"
             >
               {isLoadingWebLink ? (
                 <>
@@ -982,10 +984,10 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
       {stagedPhoto && (
         <div 
           id="photo-staging-drawer"
-          className="mb-4 p-3.5 bg-stone-950/90 border border-amber-500/30 rounded-xl animate-in fade-in slide-in-from-top-2 duration-150"
+          className="mb-4 p-3.5 bg-[#1D2328] border border-[#30383F] rounded-xl animate-in fade-in duration-150"
         >
           <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-300">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#F4F1EA]">
               <ImageIcon className="w-4 h-4 text-amber-400" />
               <span>Attach Photo Context</span>
             </div>
@@ -993,19 +995,19 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
               id="cancel-staged-photo-x-btn"
               type="button"
               onClick={handleCancelStagedPhoto}
-              className="text-stone-400 hover:text-stone-200 text-xs p-1 cursor-pointer"
+              className="text-[#747C82] hover:text-[#F4F1EA] text-xs p-1 cursor-pointer"
               title="Cancel"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <p className="text-[11px] text-stone-400 mb-2.5">
+          <p className="text-[11px] text-[#A7ADB2] mb-2.5">
             Preview your visual memory and add an optional caption before attaching it to this reflection.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 items-start">
-            <div className="relative rounded-lg overflow-hidden bg-stone-900 border border-stone-800 shrink-0 max-w-xs w-full sm:w-48">
+            <div className="relative rounded-lg overflow-hidden bg-[#14181B] border border-[#30383F] shrink-0 max-w-xs w-full sm:w-48">
               <img
                 src={stagedPhoto.url}
                 alt={stagedPhoto.caption || stagedPhoto.fileName || 'Selected photo preview'}
@@ -1016,7 +1018,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
 
             <div className="flex-1 w-full space-y-2">
               <div>
-                <label htmlFor="staged-photo-caption-input" className="text-[11px] font-medium text-stone-400 block mb-1">
+                <label htmlFor="staged-photo-caption-input" className="text-[11px] font-medium text-[#A7ADB2] block mb-1">
                   Optional caption:
                 </label>
                 <input
@@ -1031,12 +1033,12 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                       handleCommitAttachPhoto();
                     }
                   }}
-                  className="w-full bg-stone-900 border border-stone-800 rounded-lg px-3 py-1.5 text-xs text-stone-200 placeholder-stone-600 focus:outline-hidden focus:border-amber-500/50"
+                  className="w-full bg-[#14181B] border border-[#30383F] rounded-lg px-3 py-1.5 text-xs text-[#F4F1EA] placeholder-[#747C82] focus:outline-hidden focus:border-[#3282B8]"
                 />
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
-                <div className="text-[10px] text-stone-500 truncate">
+                <div className="text-[10px] text-[#747C82] truncate">
                   {stagedPhoto.fileName} ({Math.round(stagedPhoto.sizeBytes / 1024)} KB)
                 </div>
 
@@ -1045,7 +1047,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                     type="button"
                     id="cancel-staged-photo-btn"
                     onClick={handleCancelStagedPhoto}
-                    className="px-3 py-1.5 bg-stone-900 hover:bg-stone-850 text-stone-400 hover:text-stone-200 text-xs font-medium rounded-lg border border-stone-800 transition-colors cursor-pointer"
+                    className="px-3 py-1.5 bg-[#171B1F] hover:bg-[#252C32] text-[#A7ADB2] hover:text-[#F4F1EA] text-xs font-medium rounded-lg border border-[#30383F] transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -1054,7 +1056,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                     type="button"
                     id="attach-photo-btn"
                     onClick={handleCommitAttachPhoto}
-                    className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-stone-950 font-semibold text-xs rounded-lg transition-colors cursor-pointer shrink-0 flex items-center justify-center gap-1.5"
+                    className="px-4 py-1.5 bg-[#3282B8] hover:bg-[#4FA3D1] text-white font-medium text-xs rounded-lg transition-colors cursor-pointer shrink-0 flex items-center justify-center gap-1.5"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Attach Photo</span>
@@ -1068,28 +1070,28 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
 
       {/* Staged File / Document Attachment Drawer */}
       {stagedFile && (
-        <div id="staged-file-panel" className="mb-4 p-3.5 bg-stone-950/90 border border-emerald-500/30 rounded-xl animate-in fade-in slide-in-from-top-2 duration-150">
+        <div id="staged-file-panel" className="mb-4 p-3.5 bg-[#1D2328] border border-[#30383F] rounded-xl animate-in fade-in duration-150">
           <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-300">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-[#F4F1EA]">
               <FileText className="w-4 h-4 text-emerald-400" />
               <span>Attach File / Document</span>
             </div>
             <button
               onClick={handleCancelStagedFile}
-              className="text-stone-400 hover:text-stone-200 text-xs p-1"
+              className="text-[#747C82] hover:text-[#F4F1EA] text-xs p-1 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
 
           <div className="flex flex-col sm:flex-row items-start gap-3">
-            <div className="w-14 h-14 rounded-xl bg-emerald-950/50 border border-emerald-800/40 flex items-center justify-center shrink-0">
-              <FileText className="w-7 h-7 text-emerald-400" />
+            <div className="w-14 h-14 rounded-xl bg-[#14181B] border border-[#30383F] flex items-center justify-center shrink-0">
+              <FileText className="w-7 h-7 text-[#4FA3D1]" />
             </div>
 
             <div className="flex-1 w-full space-y-2">
               <div>
-                <label htmlFor="staged-file-desc-input" className="text-[11px] font-medium text-stone-400 block mb-1">
+                <label htmlFor="staged-file-desc-input" className="text-[11px] font-medium text-[#A7ADB2] block mb-1">
                   Optional note / description:
                 </label>
                 <input
@@ -1104,17 +1106,17 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                       handleCommitAttachFile();
                     }
                   }}
-                  className="w-full bg-stone-900 border border-stone-800 rounded-lg px-3 py-1.5 text-xs text-stone-200 placeholder-stone-600 focus:outline-hidden focus:border-emerald-500/50"
+                  className="w-full bg-[#14181B] border border-[#30383F] rounded-lg px-3 py-1.5 text-xs text-[#F4F1EA] placeholder-[#747C82] focus:outline-hidden focus:border-[#3282B8]"
                 />
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
-                <div className="text-[10px] text-stone-400 truncate">
-                  <span className="font-mono uppercase text-emerald-400 font-semibold">{stagedFile.fileType}</span> • {stagedFile.fileName} ({formatFileSize(stagedFile.sizeBytes)})
+                <div className="text-[10px] text-[#747C82] truncate">
+                  <span className="font-mono uppercase text-[#4FA3D1] font-semibold">{stagedFile.fileType}</span> • {stagedFile.fileName} ({formatFileSize(stagedFile.sizeBytes)})
                   {stagedFile.extractedText ? (
                     <span className="ml-1.5 text-emerald-400/90 font-medium">✓ Text extracted</span>
                   ) : (
-                    <span className="ml-1.5 text-stone-500">• Metadata attached</span>
+                    <span className="ml-1.5 text-[#747C82]">• Metadata attached</span>
                   )}
                 </div>
 
@@ -1123,7 +1125,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                     type="button"
                     id="cancel-staged-file-btn"
                     onClick={handleCancelStagedFile}
-                    className="px-3 py-1.5 bg-stone-900 hover:bg-stone-850 text-stone-400 hover:text-stone-200 text-xs font-medium rounded-lg border border-stone-800 transition-colors cursor-pointer"
+                    className="px-3 py-1.5 bg-[#171B1F] hover:bg-[#252C32] text-[#A7ADB2] hover:text-[#F4F1EA] text-xs font-medium rounded-lg border border-[#30383F] transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -1132,7 +1134,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                     type="button"
                     id="attach-file-btn"
                     onClick={handleCommitAttachFile}
-                    className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-semibold text-xs rounded-lg transition-colors cursor-pointer shrink-0 flex items-center justify-center gap-1.5"
+                    className="px-4 py-1.5 bg-[#3282B8] hover:bg-[#4FA3D1] text-white font-medium text-xs rounded-lg transition-colors cursor-pointer shrink-0 flex items-center justify-center gap-1.5"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Attach File</span>
@@ -1165,8 +1167,8 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
 
       {/* Mood Selector Chips */}
       <div className="mb-4">
-        <div className="text-[11px] font-medium text-stone-400 mb-1.5 flex items-center gap-1.5">
-          <Smile className="w-3.5 h-3.5 text-stone-400" />
+        <div className="text-[11px] font-medium text-[#A7ADB2] mb-1.5 flex items-center gap-1.5">
+          <Smile className="w-3.5 h-3.5 text-[#747C82]" />
           <span>Current Mood / Emotional State:</span>
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -1182,8 +1184,8 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                 }}
                 className={`px-2.5 py-1 text-xs rounded-lg border transition-all cursor-pointer font-medium ${
                   isSelected
-                    ? opt.color + ' ring-1 ring-amber-500/30'
-                    : 'bg-stone-950 border-stone-800 text-stone-400 hover:text-stone-200 hover:border-stone-700'
+                    ? opt.color + ' ring-1 ring-[#3282B8]/40 shadow-xs'
+                    : 'bg-[#14181B] border-[#30383F] text-[#A7ADB2] hover:text-[#F4F1EA] hover:border-[#424B54]'
                 }`}
               >
                 {opt.label}
@@ -1195,9 +1197,9 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
 
       {/* Prompt Starters */}
       {!content && (
-        <div className="mb-3 p-2.5 bg-stone-950/70 border border-stone-800/80 rounded-xl">
-          <div className="text-[11px] font-medium text-amber-400/90 mb-1.5 flex items-center gap-1">
-            <Lightbulb className="w-3 h-3 text-amber-400" />
+        <div className="mb-3.5 p-3 bg-[#14181B] border border-[#30383F] rounded-xl">
+          <div className="text-[11px] font-medium text-[#A7ADB2] mb-2 flex items-center gap-1.5">
+            <Lightbulb className="w-3.5 h-3.5 text-[#3282B8]" />
             <span>Need inspiration? Click a prompt starter:</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -1205,7 +1207,7 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
               <button
                 key={i}
                 onClick={() => handleContentChange(starter + '\n\n')}
-                className="text-[11px] text-stone-400 bg-stone-900 hover:bg-stone-850 hover:text-stone-200 border border-stone-800 px-2 py-1 rounded-md transition-colors text-left cursor-pointer"
+                className="text-[11px] text-[#A7ADB2] bg-[#1D2328] hover:bg-[#252C32] hover:text-[#F4F1EA] border border-[#30383F] px-2.5 py-1 rounded-lg transition-colors text-left cursor-pointer"
               >
                 "{starter}"
               </button>
@@ -1222,25 +1224,25 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
           placeholder="Pour your raw thoughts, journal reflections, or decisions here... Be honest and unrestrained."
           value={content}
           onChange={(e) => handleContentChange(e.target.value)}
-          className="w-full bg-stone-950 border border-stone-800 rounded-xl p-3.5 text-stone-200 text-sm placeholder-stone-600 focus:outline-hidden focus:border-amber-500/50 leading-relaxed font-sans resize-y min-h-[160px]"
+          className="w-full bg-[#14181B] border border-[#30383F] rounded-xl p-4 text-[#F4F1EA] text-sm placeholder-[#747C82] focus:outline-hidden focus:border-[#3282B8] leading-relaxed font-sans resize-y min-h-[170px]"
         />
-        <div className="absolute bottom-2.5 right-3 text-[10px] text-stone-500 pointer-events-none">
+        <div className="absolute bottom-3 right-3.5 text-[10px] text-[#747C82] pointer-events-none font-mono">
           {wordCount} words
         </div>
       </div>
 
       {/* Tags Row */}
       <div className="flex flex-wrap items-center gap-1.5 mb-5">
-        <Tag className="w-3.5 h-3.5 text-stone-500 shrink-0" />
+        <Tag className="w-3.5 h-3.5 text-[#747C82] shrink-0" />
         {tags.map((tag) => (
           <span
             key={tag}
-            className="inline-flex items-center gap-1 px-2 py-0.5 bg-stone-800 border border-stone-700 text-stone-300 text-xs rounded-md"
+            className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#14181B] border border-[#30383F] text-[#A7ADB2] text-xs rounded-md"
           >
             #{tag}
             <button
               onClick={() => handleRemoveTag(tag)}
-              className="text-stone-500 hover:text-stone-300 text-[10px] cursor-pointer"
+              className="text-[#747C82] hover:text-[#F4F1EA] text-[10px] cursor-pointer"
             >
               ×
             </button>
@@ -1258,12 +1260,12 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                 handleAddTag();
               }
             }}
-            className="bg-stone-950 border border-stone-800 rounded-md px-2 py-0.5 text-xs text-stone-300 placeholder-stone-600 focus:outline-hidden w-24"
+            className="bg-[#14181B] border border-[#30383F] rounded-md px-2.5 py-0.5 text-xs text-[#F4F1EA] placeholder-[#747C82] focus:outline-hidden focus:border-[#3282B8] w-28"
           />
           {newTag && (
             <button
               onClick={handleAddTag}
-              className="text-[10px] bg-stone-800 text-stone-300 px-1.5 py-0.5 rounded cursor-pointer"
+              className="text-[11px] bg-[#1D2328] hover:bg-[#252C32] text-[#F4F1EA] px-2 py-0.5 rounded border border-[#30383F] cursor-pointer font-medium"
             >
               Add
             </button>
@@ -1272,10 +1274,10 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
       </div>
 
       {/* AI Mode Selector & Action Bar */}
-      <div className="pt-4 border-t border-stone-800">
-        <div className="text-[11px] font-medium text-stone-400 mb-2 flex items-center justify-between">
+      <div className="pt-4 border-t border-[#30383F]">
+        <div className="text-[11px] font-medium text-[#A7ADB2] mb-2.5 flex items-center justify-between">
           <span>Choose AI Reflection Mode:</span>
-          <span className="text-[10px] text-amber-400/80">Gemini 3.6 Flash</span>
+          <span className="text-[10px] font-medium text-[#3282B8]">Gemini 3.6 Flash</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-4">
@@ -1291,15 +1293,15 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
                 }}
                 className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                   isSelected
-                    ? 'bg-amber-500/10 border-amber-500/40 text-stone-100 ring-1 ring-amber-500/20'
-                    : 'bg-stone-950 border-stone-800 text-stone-400 hover:text-stone-200 hover:border-stone-700'
+                    ? 'bg-[#3282B8]/15 border-[#3282B8] text-[#F4F1EA] ring-1 ring-[#3282B8]/40'
+                    : 'bg-[#14181B] border-[#30383F] text-[#A7ADB2] hover:text-[#F4F1EA] hover:border-[#424B54]'
                 }`}
               >
-                <div className="flex items-center gap-1.5 font-semibold text-xs">
+                <div className="flex items-center gap-1.5 font-semibold text-xs text-[#F4F1EA]">
                   <span>{m.icon}</span>
                   <span className="truncate">{m.label}</span>
                 </div>
-                <div className="text-[10px] text-stone-500 mt-1 line-clamp-2">
+                <div className="text-[10px] text-[#747C82] mt-1 line-clamp-2">
                   {m.desc}
                 </div>
               </button>
@@ -1312,16 +1314,16 @@ export const JournalEditor: React.FC<JournalEditorProps> = ({
           id="generate-gemini-reflection-btn"
           onClick={() => handleGenerateAndSave()}
           disabled={isGeneratingAI || !content.trim()}
-          className="w-full py-3 px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-stone-950 font-bold text-sm rounded-xl transition-all shadow-md shadow-amber-500/15 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.99]"
+          className="w-full py-3 px-4 bg-[#3282B8] hover:bg-[#4FA3D1] text-white font-semibold text-sm rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.99]"
         >
           {isGeneratingAI ? (
             <>
-              <RotateCw className="w-4 h-4 animate-spin text-stone-950" />
+              <RotateCw className="w-4 h-4 animate-spin text-white" />
               <span>Gemini is reflecting on your entry...</span>
             </>
           ) : (
             <>
-              <Sparkles className="w-4 h-4 text-stone-950" />
+              <Sparkles className="w-4 h-4 text-white" />
               <span>Generate Gemini Reflection & Save to Firestore</span>
             </>
           )}

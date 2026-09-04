@@ -321,7 +321,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-200">
+    <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col font-sans selection:bg-[#3282B8]/30 selection:text-stone-100">
       {/* Top Navigation */}
       <Navbar
         user={currentUser}

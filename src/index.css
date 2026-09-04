@@ -1,15 +1,351 @@
 @import "tailwindcss";
 
+:root {
+  /* Core Foundation Palette - Neutral Dark Foundation & Bright Blue Accent */
+  --bg-app: #111416;
+  --bg-secondary: #171B1F;
+  --surface-primary: #1D2328;
+  --surface-elevated: #252C32;
+  --surface-subtle: #171B1F;
+  --text-primary: #F4F1EA;
+  --text-secondary: #A7ADB2;
+  --text-muted: #747C82;
+  --brand-primary: #3282B8;
+  --brand-hover: #4FA3D1;
+  --brand-soft: #BBE1FA;
+  --state-success: #4E9A70;
+  --state-warning: #E09F3E;
+  --state-error: #D65B5B;
+  --border-divider: #30383F;
+  --border-subtle: #232A30;
+
+  /* Metric Tokens */
+  --radius-card: 0.875rem;
+  --radius-panel: 1rem;
+  --radius-input: 0.625rem;
+  --radius-button: 0.625rem;
+  --radius-badge: 0.375rem;
+
+  /* Typography Line Heights & Hierarchy */
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Newsreader", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+}
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Newsreader", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+
+  /* Brand Palette Tokens */
+  --color-app-bg: #111416;
+  --color-bg-secondary: #171B1F;
+  --color-surface-primary: #1D2328;
+  --color-surface-elevated: #252C32;
+  --color-surface-subtle: #171B1F;
+  --color-text-primary: #F4F1EA;
+  --color-text-secondary: #A7ADB2;
+  --color-text-muted: #747C82;
+  --color-brand-primary: #3282B8;
+  --color-brand-hover: #4FA3D1;
+  --color-brand-soft: #BBE1FA;
+  --color-state-success: #4E9A70;
+  --color-border-divider: #30383F;
+
+  /* Neutral Dark Foundation mapped to Stone Scale */
+  --color-stone-950: #111416;
+  --color-stone-900: #1D2328;
+  --color-stone-850: #171B1F;
+  --color-stone-800: #252C32;
+  --color-stone-750: #2B333A;
+  --color-stone-700: #30383F;
+  --color-stone-600: #424D56;
+  --color-stone-500: #747C82;
+  --color-stone-400: #A7ADB2;
+  --color-stone-300: #CBD0D4;
+  --color-stone-200: #E4E6E8;
+  --color-stone-100: #F4F1EA;
+  --color-stone-50: #FAF9F6;
+
+  /* Bright & Clean Blue Accent mapped to Amber Scale so existing controls pop with Primary Blue */
+  --color-amber-50: #F4F9FD;
+  --color-amber-100: #EBF5FB;
+  --color-amber-200: #D6EEFD;
+  --color-amber-300: #BBE1FA;
+  --color-amber-400: #4FA3D1;
+  --color-amber-500: #3282B8;
+  --color-amber-600: #276C9B;
+  --color-amber-700: #1C5378;
+  --color-amber-800: #143B55;
+  --color-amber-900: #0D2637;
+  --color-amber-950: #252C32;
+
+  /* Clean Blue Scale mapped to Orange */
+  --color-orange-50: #F4F9FD;
+  --color-orange-100: #EBF5FB;
+  --color-orange-200: #D6EEFD;
+  --color-orange-300: #BBE1FA;
+  --color-orange-400: #4FA3D1;
+  --color-orange-500: #3282B8;
+  --color-orange-600: #276C9B;
+  --color-orange-700: #1C5378;
+  --color-orange-800: #143B55;
+  --color-orange-900: #0D2637;
+  --color-orange-950: #252C32;
+
+  /* Blue System */
+  --color-blue-50: #F4F9FD;
+  --color-blue-100: #EBF5FB;
+  --color-blue-200: #D6EEFD;
+  --color-blue-300: #BBE1FA;
+  --color-blue-400: #4FA3D1;
+  --color-blue-500: #3282B8;
+  --color-blue-600: #276C9B;
+  --color-blue-700: #1C5378;
+  --color-blue-800: #143B55;
+  --color-blue-900: #0D2637;
+  --color-blue-950: #111416;
+
+  /* Remap Sage to Muted Neutral Slate so no green accent remains */
+  --color-sage-50: #FAF9F6;
+  --color-sage-100: #F4F1EA;
+  --color-sage-200: #E4E6E8;
+  --color-sage-300: #A7ADB2;
+  --color-sage-400: #747C82;
+  --color-sage-500: #424D56;
+  --color-sage-600: #30383F;
+  --color-sage-700: #252C32;
+  --color-sage-800: #1D2328;
+  --color-sage-900: #171B1F;
+  --color-sage-950: #111416;
+}
+
+/* Global HTML / Body Foundation */
+html {
+  background-color: #111416;
+  color: #F4F1EA;
+  color-scheme: dark;
+}
+
+body {
+  background-color: #111416;
+  color: #F4F1EA;
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.625;
+}
+
+::selection {
+  background-color: rgba(50, 130, 184, 0.3);
+  color: #F4F1EA;
+}
+
+/* Restrained Global Scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #30383F transparent;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #30383F;
+  border-radius: 9999px;
+  transition: background 0.2s ease-in-out;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3282B8;
+}
+
 @layer utilities {
+  /* Surfaces */
+  .surface-base {
+    background-color: #111416;
+  }
+  .surface-card {
+    background-color: #1D2328;
+    border: 1px solid #30383F;
+    border-radius: 0.875rem;
+  }
+  .surface-elevated {
+    background-color: #252C32;
+    border: 1px solid #30383F;
+    border-radius: 0.875rem;
+  }
+  .surface-subtle {
+    background-color: #171B1F;
+    border: 1px solid #232A30;
+  }
+
+  /* Typography Hierarchy */
+  .font-display-serif {
+    font-family: var(--font-serif), Georgia, serif;
+  }
+  .font-sans-ui {
+    font-family: var(--font-sans), system-ui, sans-serif;
+  }
+
+  .text-page-title {
+    color: #F4F1EA;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+  }
+  .text-section-title {
+    color: #F4F1EA;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.35;
+  }
+  .text-journal-reading {
+    color: #F4F1EA;
+    line-height: 1.75;
+    font-size: 1rem;
+  }
+  .text-meta-secondary {
+    color: #A7ADB2;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  /* Buttons & Controls System */
+  .btn-primary-blue,
+  .btn-primary-orange,
+  .btn-primary-sage,
+  .btn-primary {
+    background-color: #3282B8;
+    color: #FFFFFF;
+    font-weight: 600;
+    border-radius: 0.625rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #3282B8;
+    transition: background-color 0.15s ease-in-out, transform 0.1s ease-in-out;
+    cursor: pointer;
+  }
+  .btn-primary-blue:hover,
+  .btn-primary-orange:hover,
+  .btn-primary-sage:hover,
+  .btn-primary:hover {
+    background-color: #4FA3D1;
+    border-color: #4FA3D1;
+  }
+  .btn-primary-blue:active,
+  .btn-primary-orange:active,
+  .btn-primary-sage:active,
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  .btn-secondary-dark {
+    background-color: #252C32;
+    color: #F4F1EA;
+    border: 1px solid #30383F;
+    font-weight: 500;
+    border-radius: 0.625rem;
+    padding: 0.5rem 1rem;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+  }
+  .btn-secondary-dark:hover {
+    background-color: #2B333A;
+    border-color: #424D56;
+    color: #F4F1EA;
+  }
+
+  .btn-ghost-muted {
+    background-color: transparent;
+    color: #A7ADB2;
+    border-radius: 0.625rem;
+    padding: 0.5rem 0.75rem;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+  }
+  .btn-ghost-muted:hover {
+    background-color: #1D2328;
+    color: #F4F1EA;
+  }
+
+  /* Form Input System */
+  .input-surface {
+    background-color: #171B1F;
+    border: 1px solid #30383F;
+    color: #F4F1EA;
+    border-radius: 0.625rem;
+    padding: 0.5rem 0.75rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .input-surface:focus {
+    outline: none;
+    border-color: #3282B8;
+    box-shadow: 0 0 0 1px #3282B8;
+  }
+  .input-surface::placeholder {
+    color: #747C82;
+  }
+
+  /* Badges & Status */
+  .badge-blue,
+  .badge-brand,
+  .badge-orange,
+  .badge-amber,
+  .badge-sage {
+    background-color: rgba(50, 130, 184, 0.15);
+    border: 1px solid rgba(50, 130, 184, 0.35);
+    color: #BBE1FA;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 0.375rem;
+    padding: 0.125rem 0.5rem;
+  }
+  .badge-neutral {
+    background-color: #252C32;
+    border: 1px solid #30383F;
+    color: #A7ADB2;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 0.375rem;
+    padding: 0.125rem 0.5rem;
+  }
+  .badge-success {
+    background-color: rgba(78, 154, 112, 0.15);
+    border: 1px solid rgba(78, 154, 112, 0.35);
+    color: #8FBA91;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 0.375rem;
+    padding: 0.125rem 0.5rem;
+  }
+
+  /* Dividers & Borders */
+  .border-theme-divider {
+    border-color: #30383F;
+  }
+
+  /* Restrained Shadows */
+  .shadow-card-subtle {
+    box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.4);
+  }
+  .shadow-panel-subtle {
+    box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Preserved specific utility hooks */
   .wrapped-scroll {
     scrollbar-width: thin;
-    scrollbar-color: rgba(168, 162, 158, 0.2) transparent;
+    scrollbar-color: #30383F transparent;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
     transition: scrollbar-color 0.2s ease-in-out;
   }
   .wrapped-scroll:hover {
-    scrollbar-color: rgba(168, 162, 158, 0.45) transparent;
+    scrollbar-color: #3282B8 transparent;
   }
   .wrapped-scroll::-webkit-scrollbar {
     width: 4px;
@@ -19,17 +355,17 @@
     background: transparent;
   }
   .wrapped-scroll::-webkit-scrollbar-thumb {
-    background: rgba(168, 162, 158, 0.2);
+    background: #30383F;
     border-radius: 9999px;
     transition: background 0.2s ease-in-out;
   }
   .wrapped-scroll:hover::-webkit-scrollbar-thumb {
-    background: rgba(168, 162, 158, 0.45);
+    background: #3282B8;
   }
 
   .mood-chips-scroll {
     scrollbar-width: thin;
-    scrollbar-color: rgba(168, 162, 158, 0.25) transparent;
+    scrollbar-color: #30383F transparent;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
   }
@@ -40,10 +376,10 @@
     background: transparent;
   }
   .mood-chips-scroll::-webkit-scrollbar-thumb {
-    background: rgba(120, 113, 108, 0.3);
+    background: #30383F;
     border-radius: 9999px;
   }
   .mood-chips-scroll:hover::-webkit-scrollbar-thumb {
-    background: rgba(245, 158, 11, 0.45);
+    background: #3282B8;
   }
 }
