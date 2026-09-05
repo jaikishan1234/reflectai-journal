@@ -50,7 +50,7 @@ The original challenge provides the foundation of Firebase Authentication, Gemin
 Each entry can be processed through five reflection modes:
 
 1. **Reflect & Guide**
-2. **Summarize**
+2. **Summarize & The...**
 3. **Brainstorm Ideas**
 4. **3-Step Action Plan**
 5. **Wellness Check**
@@ -410,7 +410,7 @@ The browser favicon was also redesigned to match the ReflectAI visual identity.
 
 ### Prerequisites
 
-- Node.js and npm
+- Bun
 - A Firebase project
 - Firebase Authentication enabled
 - Cloud Firestore enabled
@@ -420,7 +420,7 @@ The browser favicon was also redesigned to match the ReflectAI visual identity.
 ### Install dependencies
 
 ```bash
-npm install
+bun install
 ```
 
 ### Configure the application
@@ -432,7 +432,7 @@ Do **not** commit API keys, tokens, service-account JSON files, or local `.env` 
 ### Run locally
 
 ```bash
-npm run dev
+bun run dev
 ```
 
 The exact local development command can vary with the project's current package configuration.
@@ -537,6 +537,38 @@ docs/
 
 These screenshots demonstrate the main product areas, including the journal-first editor, discovery tools, Gemini reflection, deeper dialogue, personal intelligence, retrospective experiences, and security guidance.
 
+### Final Application Screenshots
+
+#### 1. Journal Editor
+![Journal Editor](docs/screenshots/01-journal-editor.png)
+
+#### 2. History & Search
+![History & Search](docs/screenshots/02-history-search.png)
+
+#### 3. AI Reflection with Context
+![AI Reflection with Context](docs/screenshots/03-ai-reflection-with-context.png)
+
+#### 4. Deeper Dialogue
+![Deeper Dialogue](docs/screenshots/04-deeper-dialogue.png)
+
+#### 5. Journal Intelligence
+![Journal Intelligence](docs/screenshots/05-journal-intelligence.png)
+
+#### 6. Your Story
+![Your Story](docs/screenshots/06-your-story.png)
+
+#### 7. Wellbeing
+![Wellbeing](docs/screenshots/07-wellbeing.png)
+
+#### 8. Personal Wrapped
+![Personal Wrapped](docs/screenshots/08-personal-wrapped.png)
+
+#### 9. Ask My Journal
+![Ask My Journal](docs/screenshots/09-ask-my-journal.png)
+
+#### 10. Security Architecture
+![Security Architecture](docs/screenshots/10-security-architecture.png)
+
 ---
 
 ## 🔗 Project Links
@@ -559,7 +591,7 @@ The no-voice-over walkthrough demonstrates the complete product experience, incl
 
 ### Project Blog
 
-**Blog:** https://dsadigest.hashnode.dev/reflectai-journal-building-a-private-ai-powered-space-for-reflection
+**Blog:** https://dsadigest.hashnode.dev/building-ai-agents-with-google-cloud-my-journey-through-three-tracks
 
 The blog will explain the problem behind ReflectAI, the product design, Firebase and Firestore architecture, Gemini integration, Cloud Run deployment, security approach, offline-first behavior, and the major extensions beyond the challenge starter.
 
