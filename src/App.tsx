@@ -40,12 +40,15 @@ export default function App() {
       if (cached.length > 0) {
         setEntries(cached);
         setActiveEntry(prev => (prev && prev.userId === currentUser.uid ? prev : cached[0]));
+      } else if (StorageService.isUserInitialized(currentUser.uid)) {
+        setEntries([]);
+        setActiveEntry(null);
       }
 
       // Then fetch remote Firestore documents
       StorageService.fetchFirestoreEntries(currentUser.uid).then(cloudEntries => {
         if (!isMounted) return;
-        if (cloudEntries.length === 0) {
+        if (cloudEntries.length === 0 && !StorageService.isUserInitialized(currentUser.uid)) {
           StorageService.seedInitialData(currentUser.uid, currentUser.displayName).then(seeded => {
             if (!isMounted) return;
             setEntries(seeded);
@@ -57,7 +60,7 @@ export default function App() {
             if (prev && cloudEntries.some(e => e.id === prev.id)) {
               return cloudEntries.find(e => e.id === prev.id) || cloudEntries[0];
             }
-            return cloudEntries[0];
+            return cloudEntries[0] || null;
           });
         }
       });

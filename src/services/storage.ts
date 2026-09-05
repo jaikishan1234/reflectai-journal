@@ -3,6 +3,7 @@ import { db, doc, setDoc, getDocs, deleteDoc, collection, query, orderBy } from 
 
 const AUTH_USER_KEY = 'reflectai_auth_user';
 const STORAGE_PREFIX = 'reflectai_entries_';
+const INITIALIZED_PREFIX = 'reflectai_initialized_';
 
 // Strict Undefined-Stripping & Zero-Crash Payload Sanitizer
 export function sanitizePayload<T>(obj: T): T {
@@ -15,6 +16,28 @@ export function sanitizePayload<T>(obj: T): T {
 }
 
 export const StorageService = {
+  // Check if user has already been initialized (either has existing entries or has intentionally deleted all)
+  isUserInitialized(userId: string): boolean {
+    if (!userId) return false;
+    try {
+      if (localStorage.getItem(`${INITIALIZED_PREFIX}${userId}`) === 'true') return true;
+      // If local cache key exists (even as "[]"), the user has previously synced
+      if (localStorage.getItem(`${STORAGE_PREFIX}${userId}`) !== null) return true;
+    } catch {
+      // Fallback
+    }
+    return false;
+  },
+
+  markUserInitialized(userId: string): void {
+    if (!userId) return;
+    try {
+      localStorage.setItem(`${INITIALIZED_PREFIX}${userId}`, 'true');
+    } catch {
+      // Ignore localStorage errors
+    }
+  },
+
   // Authentication State Cache
   getCurrentUser(): UserProfile | null {
     try {
@@ -64,9 +87,12 @@ export const StorageService = {
       const snapshot = await getDocs(q);
       
       const firestoreEntries: JournalEntry[] = [];
+      let hasCloudDocs = false;
+
       snapshot.forEach(docSnap => {
+        hasCloudDocs = true;
         const data = docSnap.data() as JournalEntry;
-        if (data && data.userId === userId) {
+        if (data && data.userId === userId && !docSnap.id.startsWith('_')) {
           firestoreEntries.push({
             ...data,
             id: docSnap.id || data.id,
@@ -74,14 +100,18 @@ export const StorageService = {
         }
       });
 
-      if (firestoreEntries.length > 0) {
-        this.saveLocalEntries(userId, firestoreEntries);
-        return firestoreEntries;
+      // If user has interactions or entries in Firestore, mark user as initialized
+      if (hasCloudDocs || firestoreEntries.length > 0) {
+        this.markUserInitialized(userId);
       }
+
+      // Successful Firestore fetch is authoritative: synchronize local cache with exact remote state (even if empty)
+      this.saveLocalEntries(userId, firestoreEntries);
+      return firestoreEntries;
     } catch (err) {
       console.warn('[Firestore] Could not load entries from cloud (using local cache):', err);
+      return this.getLocalEntries(userId);
     }
-    return this.getLocalEntries(userId);
   },
 
   // Save Entry to both Cloud Firestore and Local Mirror
@@ -108,6 +138,7 @@ export const StorageService = {
       localEntries.unshift(sanitized);
     }
     this.saveLocalEntries(userId, localEntries);
+    this.markUserInitialized(userId);
 
     // Persist to Cloud Firestore: `/users/{userId}/interactions/{entryId}`
     try {
@@ -128,6 +159,7 @@ export const StorageService = {
     const localEntries = this.getLocalEntries(userId);
     const updated = localEntries.filter(e => e.id !== entryId);
     this.saveLocalEntries(userId, updated);
+    this.markUserInitialized(userId);
 
     try {
       const docRef = doc(db, 'users', userId, 'interactions', entryId);
@@ -140,6 +172,7 @@ export const StorageService = {
 
   // Initial Seed for new users: provides 3 realistic, grounded entries covering learning, focus, and milestones
   async seedInitialData(userId: string, userName: string): Promise<JournalEntry[]> {
+    this.markUserInitialized(userId);
     const existing = await this.fetchFirestoreEntries(userId);
     if (existing.length > 0) return existing;
 
